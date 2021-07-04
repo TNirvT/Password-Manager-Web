@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+*.salt
+*.key
+website/temp_pwmngr.db

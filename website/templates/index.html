@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if flag_=="new" %}
+    -Welcome
+  {% else %}
+    -Verify
+  {% endif %}
+{% endblock %}
+{% block body %}
+<form align="center" method="POST">
+  <h1 class="heading">Master Password</h1>
+  <div class="form-group">
+    {% if flag_=="new" %}
+      <label for="master_pw">Create a Master Password to start:</label><br>
+    {% else %}
+      <label for="master_pw">Verification</label><br>
+    {% endif %}
+    <input
+      type="password"
+      class="form-control"
+      id="master_pw"
+      name="master_pw"
+      placeholder="Enter Master Password"
+    />
+  </div>
+  <br>
+  <button type="submit" class="btn-submit">Unlock</button>
+</form>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}-Vault{% endblock %}
+{% block body %}
+<form align="center" method="POST">
+  <h1 class="heading">Password Vault</h1>
+  <div class="form-group">
+    <label for="url_read">Search</label>
+    <input 
+      type="text"
+      class="form-control"
+      id="url_read"
+      name="url_read"
+      placeholder="Search URL"
+    />
+  </div>
+  <br>
+  <button type="submit" class="btn-submit">Submit</button><br>
+</form><br>
+{% if s_result %}
+<div class="table-title" align="center">
+  <h2 class="heading">Record for</h2>
+  <strong>https://{{ s_result.url }}</strong><br>
+  <button type="button">Copy Password</button>
+</div>
+  <table align="center">
+  <div class="table-group">
+    <tr>
+      <th>Login ID</th><th>Notes</th><th>Actions</th>
+    </tr>
+    <tr>
+      <td>{{ s_result.login }}</td>
+      <td>{{ s_result.remark }}</td>
+      <td>
+        <a href="/update/{{ s_result.id }}">Update</a><br>
+        <a href="/delete/{{ s_result.id }}">Delete</a>
+      </td>
+    </tr>
+  </div>
+</table>
+{% endif %}
+{% endblock %}

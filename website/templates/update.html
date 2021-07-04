@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if action=="insert" %}-New
+  {% else %}-Modify
+  {% endif %}
+{% endblock %}
+{% block body %}
+<form align="center" method="POST">
+  {% if action=="insert" %}
+  <h1 class="heading">Add Record</h1>
+  {% else %}
+  <h1 class="heading">Update Record</h1>
+  {% endif %}
+  <strong>for URL: https://{{ url }}</strong>
+  <div class="form-group">
+    <label for="login">Login ID/ Email</label>
+    <input
+      type="text"
+      class="form-control"
+      id="login"
+      name="login"
+      placeholder="Login ID/ Email"
+      {% if action=="update" %}
+      value={{ login }}
+      {% endif %}
+    />
+  </div>
+  <div class="form-group">
+    <label for="reamark">Additional Note</label>
+    <input
+      type="text"
+      class="form-control"
+      id="remark"
+      name="remark"
+      placeholder="Additional Note"
+      {% if action=="update" %}
+      value={{ remark }}
+      {% endif %}
+    />
+  </div>
+  {% if action=="insert" %}
+  <div class="form-group">
+    <label for="password">Password</label>
+    <input
+      type="password"
+      class="form-control"
+      id="password"
+      name="password"
+      placeholder="Leave blank to atuo-generate"
+    />
+  </div>
+  {% endif %}
+  <br>
+  <button type="submit" class="btn-submit">Submit</button>
+</form>
+{% endblock %}
