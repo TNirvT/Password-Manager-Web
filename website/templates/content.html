@@ -20,7 +20,7 @@
 <div class="table-title" align="center">
   <h2 class="heading">Record for</h2>
   <strong>https://{{ s_result.url }}</strong><br>
-  <button type="button">Copy Password</button>
+  <button type="button" id="btn-copyPass" value={{ s_result.password }}>Copy Password</button>
 </div>
   <table align="center">
   <div class="table-group">
@@ -37,5 +37,9 @@
     </tr>
   </div>
 </table>
+<script
+  type="text/javascript"
+  src="{{ url_for('static', filename='clipboard.js') }}">
+</script>
 {% endif %}
 {% endblock %}

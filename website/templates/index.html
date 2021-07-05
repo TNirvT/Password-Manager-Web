@@ -10,11 +10,15 @@
 <form align="center" method="POST">
   <h1 class="heading">Master Password</h1>
   <div class="form-group">
+    <label for="master_pw">
     {% if flag_=="new" %}
-      <label for="master_pw">Create a Master Password to start:</label><br>
-    {% else %}
-      <label for="master_pw">Verification</label><br>
+      Create a Master Password to start:
+    {% elif flag_=="verify" %}
+      Verification
+    {% elif flag_=="logged_in" %}
+      Change
     {% endif %}
+    </label>
     <input
       type="password"
       class="form-control"

@@ -4,17 +4,35 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{{ url_for('static, filename='base.css') }}">
   <title>Password Manager{% block title %}{% endblock %}</title>
 </head>
 <body>
-<!--
   <nav class="navbar">
     <div class="navbar-links">
-      <a class="nav-item" href="">Master</a>
-      <a class="nav-item" href="">Lock</a>
+      <a class="nav-item" href="/">Master</a>
+      <a class="nav-item" href="/lock">Lock</a>
     </div>
   </nav>
--->
+  {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+      {% for categories, message in messages %}
+        {% if categories=="good" %}
+        <div class="alert-good" role="alert">{{ message }}
+          <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        {% elif categories=="warn" %}
+        <div class="alert-warn" role="alert">{{ message }}
+          <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        {% enif %}
+      {% endfor %}
+    {% enif %}
+  {% endwith %}
   {% block body %}
   {% endblock %}
 </body>

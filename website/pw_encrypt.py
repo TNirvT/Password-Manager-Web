@@ -16,8 +16,8 @@ if platform.startswith("linux"):
 elif platform.startswith("win32"):
     key_path = path.abspath(" /../../.keys/pwmngr.key")
     db_path = path.abspath(" /../../.database/pwmngr.db")
-key_path = "temp_pwmngr.key"        # temp path for testing
-db_path = "temp_pwmngr.db"  # temporary path for testing
+key_path = key_path.replace("pwmngr.key", "temp_pwmngr.key")        # temp path for testing
+db_path = db_path.replace("pwmngr.db", "temp_pwmngr.db")  # temporary path for testing
 salt_path = key_path.replace("pwmngr.key", "pwmngr.salt")
 
 def salt_gen():
