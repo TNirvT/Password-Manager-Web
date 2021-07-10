@@ -5,14 +5,14 @@
   {% endif %}
 {% endblock %}
 {% block body %}
-<form method="POST">
+<form class="form-group" method="POST">
   {% if action=="insert" %}
   <h1 class="heading">Add Record</h1>
   {% else %}
   <h1 class="heading">Update Record</h1>
   {% endif %}
   <strong>for URL: https://{{ url }}</strong>
-  <div class="form-group">
+  <div>
     <label for="login">Login ID/ Email</label>
     <input
       type="text"
@@ -25,7 +25,7 @@
       {% endif %}
     />
   </div>
-  <div class="form-group">
+  <div>
     <label for="reamark">Additional Note</label>
     <input
       type="text"
@@ -38,7 +38,7 @@
       {% endif %}
     />
   </div>  
-  <div class="form-group">
+  <div>
     <label for="password">Password</label>
     {% if action=="insert" %}
     <input
@@ -58,14 +58,15 @@
     />
     {% endif %}
   </div>
-  <ul class="list-notes">
-    {% if action=="update" %}
-    <li>Leave blank if you don't want to update password.</li>
-    {% endif %}
-    <li>Enter punctuations-only will generate a password with punctuations pick from them.</li>
-    <li>Or you can enter a password directly.</li>
-  </ul>
-  <br>
-  <button type="submit" class="btn-submit">Submit</button>
+  <div class="gen-group">
+    <ul class="list-notes">
+      {% if action=="update" %}
+      <li>Leave blank if you don't want to update password.</li>
+      {% endif %}
+      <li>Enter punctuations-only will generate a password with punctuations pick from them.</li>
+      <li>Or you can enter a password directly.</li>
+    </ul><br>
+    <button type="submit" class="btn-submit">Submit</button>
+  </div>
 </form>
 {% endblock %}

@@ -5,7 +5,7 @@ body{
     min-width: 360px;
     margin: 0;
 }
-form{
+.form-group, .table-title, .gen-group{
     text-align: center;
 }
 input{
@@ -82,4 +82,11 @@ table{
 td, th{
     border: 1px solid #b0b0b0;
     padding: 5px;
+}
+.list-notes{
+    width: 100%;
+    max-width: 420px;
+    text-align: left;
+    margin-left: auto;
+    margin-right: auto;
 }

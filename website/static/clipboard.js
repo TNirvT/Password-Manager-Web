@@ -1,13 +1,23 @@
 const btnCopy=document.getElementById("btn-copyPass");
 if (btnCopy.value) {
     btnCopy.addEventListener("click", function (){
-    navigator.clipboard.writeText(btnCopy.value)    
+    navigator.clipboard.writeText(btnCopy.value);
+    console.log("copy btn clicked")
     })
 };
 
 const btnGen=document.getElementById("btn-gen-new");
-btnGen.addEventListener("click", function (){
-    $.post("/content", {
+function btnPost(){
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/content", true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify({
         id_for_pw: btnGen.value
-    })
-});
+    }));
+    // $.post( "/content", {
+    //     javascript_data: 103
+    // });
+};
+// btnGen.addEventListener("click", function (){
+//     btnPost();
+// })

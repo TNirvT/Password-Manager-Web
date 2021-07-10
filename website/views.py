@@ -89,6 +89,7 @@ def content():
     if not validateSess(): return redirect(url_for("views.masterpw"))
     if request.method == "POST":
         if "url_read" in request.form:
+            print(1)
             url_read = request.form.get("url_read")
             url = tldextract.extract(url_read).registered_domain
             passrecord = PassRecord.query.filter_by(url=url).first()
@@ -96,19 +97,21 @@ def content():
                 return redirect(url_for("views.insert", url=url))
             passrecord.password = str_encrypt(passrecord.password, request.cookies.get("pwmngrKey"), "de")
             return render_template("content.html", s_result=passrecord)
-        elif "id_for_pw" in request.form:
-            id_for_pw = request.form.get("id_for_pw")
-            passrecord = PassRecord.get_or_404(id_for_pw)
+        elif "gen_new" in request.form:
+            id_for_pw = request.form.get("gen_new")
+            # print(id_for_pw)
+            # return "3"
+            passrecord = PassRecord.query.get_or_404(id_for_pw)
             new_pw = pwgen("")
             passrecord.password = str_encrypt(new_pw, request.cookies.get("pwmngrKey"), "en")
             db.session.commit()
             flash(f"Record (id={id_for_pw}) updated successfully", category="good")
-            s_result = passrecord
+            s_result = PassRecord.query.get_or_404(id_for_pw)
             s_result.password = new_pw
             return render_template("content.html", s_result=s_result)
     # if id and id!=100:
     try:
-        cookie_recid = int(request.cookies.get("recId")) # try to use cookie/session_storage instead of url/route parameter
+        cookie_recid = int(request.cookies.get("recId")) # use cookie/session_storage instead of url/route parameter
         if cookie_recid and cookie_recid != 100:
             s_result=PassRecord.query.filter_by(id=cookie_recid).first()
             s_result.password = str_encrypt(s_result.password, request.cookies.get("pwmngrKey"), "de")

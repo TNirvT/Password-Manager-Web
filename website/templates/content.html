@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}-Vault{% endblock %}
 {% block body %}
-<form method="POST">
+<form class="form-group" method="POST">
   <h1 class="heading">Password Vault</h1>
-  <div class="form-group">
+  <div>
     <label for="url_read">Search</label>
     <input 
       type="text"
@@ -17,7 +17,7 @@
 </form>
 {% if s_result %}
 <div class="table-title">
-  <h2>
+  <h2 class="heading">
     Record for<br>
     https://{{ s_result.url }}
   </h2>
@@ -25,6 +25,11 @@
 </div>
 <table>
   <div class="table-group">
+    <colgroup>
+      <col style="width: 40%;">
+      <col style="width: 40%;">
+      <col style="width: 20%;">
+    </colgroup>
     <tr>
       <th>Login ID</th><th>Notes</th><th>Actions</th>
     </tr>
@@ -38,10 +43,14 @@
     </tr>
   </div>
 </table>
-<button type="button" id="btn-gen-new" value={{ s_result.id }}>Generate New Password</button><br>
-<ul class="list-notes">
-  <li>Generate New Password will update the record automatically.</li>
-</ul>
+<!-- <div class="gen-group"> -->
+<form class="form-group" method="POST">
+  <button type="submit" id="gen_new" name="gen_new" value={{ s_result.id }}>Generate New Password</button><br>
+  <ul class="list-notes">
+    <li>Generate New Password will update the record automatically.</li>
+  </ul>
+<!-- </div> -->
+</form>
 <script
   type="text/javascript"
   src="{{ url_for('static', filename='clipboard.js') }}">
