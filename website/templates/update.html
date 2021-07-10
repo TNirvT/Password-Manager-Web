@@ -5,7 +5,7 @@
   {% endif %}
 {% endblock %}
 {% block body %}
-<form align="center" method="POST">
+<form method="POST">
   {% if action=="insert" %}
   <h1 class="heading">Add Record</h1>
   {% else %}
@@ -37,10 +37,10 @@
       value={{ remark }}
       {% endif %}
     />
-  </div>
-  {% if action=="insert" %}
+  </div>  
   <div class="form-group">
     <label for="password">Password</label>
+    {% if action=="insert" %}
     <input
       type="password"
       class="form-control"
@@ -48,8 +48,23 @@
       name="password"
       placeholder="Leave blank to atuo-generate"
     />
+    {% else %}
+    <input
+      type="password"
+      class="form-control"
+      id="password"
+      name="password"
+      placeholder="Custom Password"
+    />
+    {% endif %}
   </div>
-  {% endif %}
+  <ul class="list-notes">
+    {% if action=="update" %}
+    <li>Leave blank if you don't want to update password.</li>
+    {% endif %}
+    <li>Enter punctuations-only will generate a password with punctuations pick from them.</li>
+    <li>Or you can enter a password directly.</li>
+  </ul>
   <br>
   <button type="submit" class="btn-submit">Submit</button>
 </form>

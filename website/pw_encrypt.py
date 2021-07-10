@@ -11,30 +11,28 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 if platform.startswith("linux"):
-    key_path = path.expanduser("~/.keys/pwmngr.key")
     db_path = path.expanduser("~/.database/pwmngr.db")
 elif platform.startswith("win32"):
-    key_path = path.abspath(" /../../.keys/pwmngr.key")
     db_path = path.abspath(" /../../.database/pwmngr.db")
-key_path = key_path.replace("pwmngr.key", "temp_pwmngr.key")        # temp path for testing
 db_path = db_path.replace("pwmngr.db", "temp_pwmngr.db")  # temporary path for testing
-salt_path = key_path.replace("pwmngr.key", "pwmngr.salt")
+salt_path = db_path.replace("pwmngr.db", "pwmngr.salt")
+secret_path = db_path.replace(".db", ".secr")
 
 def salt_gen():
     salt_new = urandom(16)
     with open(salt_path, "wb") as f:
         f.write(salt_new)
 
-def key_write(key):
-    with open(key_path, "wb") as f:     # wb = write bytes
-        f.write(key)
-    f.close()
+# def key_write(key):
+#     with open(key_path, "wb") as f:     # wb = write bytes
+#         f.write(key)
+#     f.close()
 
-def key_read():
-    with open(key_path, "rb") as f:     # rb = read bytes
-        key = f.read()
-    f.close()
-    return key
+# def key_read():
+#     with open(key_path, "rb") as f:     # rb = read bytes
+#         key = f.read()
+#     f.close()
+#     return key
 
 def key_random():
     key = Fernet.generate_key()
@@ -75,24 +73,29 @@ def str_encrypt(str_in, key, opt):
         str_out = fernet.decrypt(str_in).decode()
     return str_out
 
-def master_pw(pw_in, opt):
-    if opt == "login":
-        key = key_pw(pw_in)
-        if key == key_read():
-            print("Master Password correct!")
-            return True
-        else:
-            print("Incorrect password!")
-            return False
-    elif opt == "new":
-        key = key_pw(pw_in)
-        key_write(key)
-    elif opt == "change":
-        key = key_pw(pw_in)
-        copy2(key_path, key_path+".old")
-        key_write(key)
-    elif opt == "del_old":
-        remove(key_path+".old")
+# def master_pw(pw_in, opt):
+#     if opt == "login":
+#         key = key_pw(pw_in)
+#         if key == key_read():
+#             print("Master Password correct!")
+#             return True
+#         else:
+#             print("Incorrect password!")
+#             return False
+#     elif opt == "new":
+#         key = key_pw(pw_in)
+#         key_write(key)
+#     elif opt == "change":
+#         key = key_pw(pw_in)
+#         copy2(key_path, key_path+".old")
+#         key_write(key)
+#     elif opt == "del_old":
+#         remove(key_path+".old")
+
+def pwgen_basic():
+    characters = string.ascii_letters + string.digits
+    password =  "".join(choice(characters) for x in range(randint(18, 22)))
+    return password
 
 def pwgen(in_put):
     in_put = str(in_put).replace(" ","")
@@ -100,8 +103,7 @@ def pwgen(in_put):
     pw_length = randint(10,14)
     p_up = "".join(choice(string.ascii_uppercase) for x in range(randint(1,3)))
     p_nums = "".join(choice(string.digits) for x in range(randint(2,3)))
-    if in_put=="":
-        # p_punc = "".join(choice(string.punctuation) for x in range(randint(1,3)))
+    if in_put == "":
         p_punc = "".join(choice("!@#$%^&*-_+=<>,.?") for x in range(randint(1,3)))
     else:
         p_punc = "".join(choice(in_put) for x in range(randint(1,2)))
@@ -114,3 +116,9 @@ def allpunct(in_put):
         if i not in string.punctuation:
             return False
     return True
+
+if not path.exists(secret_path):
+    with open(secret_path, "w") as f:
+        f.write(pwgen_basic())
+with open(secret_path) as f:
+    secret_phrase = f.read()
