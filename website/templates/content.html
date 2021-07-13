@@ -15,13 +15,13 @@
   </div>
   <button type="submit" class="btn-submit">Submit</button>
 </form>
-{% if s_result %}
+{% if result %}
 <div class="table-title">
   <h2 class="heading">
     Record for<br>
-    https://{{ s_result.url }}
+    https://{{ result.url }}
   </h2>
-  <button type="button" id="btn-copyPass" value={{ s_result.password }}>Copy Password</button>
+  <button type="button" id="btn-copyPass" value={{ result.password }}>Copy Password</button>
 </div>
 <table>
   <div class="table-group">
@@ -34,18 +34,18 @@
       <th>Login ID</th><th>Notes</th><th>Actions</th>
     </tr>
     <tr>
-      <td>{{ s_result.login }}</td>
-      <td>{{ s_result.remark }}</td>
+      <td>{{ result.login }}</td>
+      <td>{{ result.remark }}</td>
       <td>
-        <a href="/update/{{ s_result.id }}">Update</a><br>
-        <a href="/delete/{{ s_result.id }}">Delete</a>
+        <a href="/update/{{ result.id }}">Update</a><br>
+        <a href="/delete/{{ result.id }}">Delete</a>
       </td>
     </tr>
   </div>
 </table>
 <!-- <div class="gen-group"> -->
 <form class="form-group" method="POST">
-  <button type="submit" id="gen_new" name="gen_new" value={{ s_result.id }}>Generate New Password</button><br>
+  <button type="submit" id="generate_new" name="generate_new" value={{ result.id }}>Generate New Password</button><br>
   <ul class="list-notes">
     <li>Generate New Password will update the record automatically.</li>
   </ul>

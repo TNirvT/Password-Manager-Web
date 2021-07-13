@@ -1,175 +1,178 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response
+from os import remove
 from shutil import copy
-from .pw_encrypt import *
-from .models import PassRecord
-from . import db
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response
 import tldextract
+
+from .master_key import MasterKey
+from .pw_gen import pwgen
+from .models import PassRecord
+from . import db, db_path, secret_id
 
 views = Blueprint("views", __name__)
 
-def validateSess():
-    cookieKey = request.cookies.get("pwmngrKey")
-    if not cookieKey: return False
-    try:
-        decrypt_trial = str_encrypt(PassRecord.query.filter_by(id=100).first().password, cookieKey, "de")
-        if decrypt_trial == secret_phrase:
-            return True
-    except Exception as err:
-        print(f"<<Error! {err}>> (masterpw, verify)")
-        flash("Incorrect password!", category="warn")
-        return False
-    return False
+def validateSession():
+    cookieKey = request.cookies.get("pwmngrMaster")
+    if cookieKey:
+        master_key = MasterKey(bytes(cookieKey, "utf-8"))
+        secret_entry = PassRecord.query.get(secret_id)
+        if master_key.unlock(None, secret_entry.password):
+            return master_key
+    return None
 
 @views.route("/", methods=["GET","POST"])
-def masterpw():
-    if not PassRecord.query.filter_by(id=100).first():
-        flag_ = "new"
+def index():
+    master_key = validateSession()
+    secret_entry = PassRecord.query.get(secret_id)
+    if secret_entry and not master_key:
+        view_flag = "locked"
         if request.method == "POST":
-            master_new = request.form.get("master_pw")
-            salt_gen()
-            flag_ = "logged_in"
-            flash("New Master password created", category="good")
-            new_verifyrecord = PassRecord(id=100, url=".dum.my/Url", password=str_encrypt(secret_phrase, key_pw(master_new), "en"))
-            db.session.add(new_verifyrecord)
-            db.session.commit()
-            resp = make_response( redirect(url_for("views.content")) )
-            resp.set_cookie("pwmngrKey", key_pw(master_new))
-            return resp
-    elif not validateSess():
-        flag_ = "verify"
-        if request.method == "POST":
-            master_in = request.form.get("master_pw")
-            old_verifyrecord = PassRecord.query.filter_by(id=100).first()
-            try:
-                decrypt_trial = str_encrypt(old_verifyrecord.password, key_pw(master_in), "de")
-                if decrypt_trial == secret_phrase:
-                    flag_ = "logged_in"
-                    flash("Master password correct", category="good")
-                    resp = make_response( redirect(url_for("views.content")) )
-                    resp.set_cookie("pwmngrKey", key_pw(master_in))
-                    return resp
-            except Exception as err:
-                print(f"<<Error! {err}>> (masterpw, verify)")
+            pw = request.form.get("master_pw")
+            input_master_key = MasterKey(None)
+            if input_master_key.unlock(pw, secret_entry.password):
+                view_flag = "unlocked"
+                flash("Master password correct", category="good")
+                resp = make_response( redirect(url_for("views.content")) )
+                resp.set_cookie("pwmngrMaster", input_master_key.key)
+                return resp
+            else:
                 flash("Incorrect password!", category="warn")
-                return render_template("index.html", flag_=flag_)
-    elif validateSess():
-        flag_ = "logged_in"
+    elif not master_key:
+        view_flag = "create"
+        if request.method == "POST":
+            pw = request.form.get("master_pw")
+            new_master_key = MasterKey(None)
+            new_secret = PassRecord(id=secret_id, url="$dum.my/url$", password=new_master_key.set_pw(pw))
+            db.session.add(new_secret)
+            db.session.commit()
+            flash("Master password created", category="good")
+            resp = make_response( redirect(url_for("views.content")) )
+            resp.set_cookie("pwmngrMaster", new_master_key.key)
+            return resp
+    else:
+        view_flag = "unlocked"
         if request.method == "POST":
             copy(db_path, db_path+".old")
-            old_records = PassRecord.query.all()
-            pass_decoded = []
-            old_key = request.cookies.get("pwmngrKey")
-            for i in old_records:  # decrypt using existing key
-                pass_decoded += [( i.id, str_encrypt(i.password, old_key, "de") )]
-            new_key = key_pw(request.form.get("master_pw")) # generate a new key using new master p/w
-            for i in pass_decoded:  # re-encrypt the p/w column using new m_pw
-                pass_re_en = str_encrypt(i[1], new_key, "en")
-                updating_record = PassRecord.query.filter_by(id=i[0]).first()
-                updating_record.password = pass_re_en
+            all_rows = PassRecord.query.all()
+
+            all_dec = []
+            for row in all_rows:
+                data_dec = master_key.decrypt(row.password)
+                all_dec.append((row.id, data_dec))
+            
+            pw = request.form.get("master_pw")
+            PassRecord.query.get(secret_id).password = master_key.set_pw(pw)
+            
+            for row in all_dec:
+                if row[0] == secret_id:
+                    continue
+                data_enc = master_key.encrypt(row[1])
+                PassRecord.query.get(row[0]).password = data_enc
             db.session.commit()
+
+            remove(db_path+".old")
             flash("Master password changed successfully", category="good")
             resp = make_response( redirect(url_for("views.content")) )
-            resp.set_cookie("pwmngrKey", new_key)
+            resp.set_cookie("pwmngrMaster", master_key.key)
             return resp
-    return render_template("index.html", flag_=flag_)
+    return render_template("index.html", view_flag=view_flag)
 
 @views.route("/lock")
 def master_change():
-    if not validateSess(): return redirect(url_for("views.masterpw"))
+    if not validateSession(): return redirect(url_for("views.index"))
     flash("Password vault locked", category="warn")
-    resp = make_response( redirect(url_for("views.masterpw")) )
-    resp.delete_cookie("pwmngrKey")
+    resp = make_response( redirect(url_for("views.index")) )
+    resp.delete_cookie("pwmngrMaster")
     return resp
 
-# @views.route("/content", defaults={"id": None}, methods=["GET","POST"])
-# @views.route("/content/<int:id>", methods=["GET","POST"])
-# def content(id):
 @views.route("/content", methods=["GET","POST"])
 def content():
-    if not validateSess(): return redirect(url_for("views.masterpw"))
+    master_key = validateSession()
+    if not master_key: return redirect(url_for("views.index"))
     if request.method == "POST":
         if "url_read" in request.form:
-            print(1)
             url_read = request.form.get("url_read")
-            url = tldextract.extract(url_read).registered_domain
-            passrecord = PassRecord.query.filter_by(url=url).first()
-            if not passrecord:
-                return redirect(url_for("views.insert", url=url))
-            passrecord.password = str_encrypt(passrecord.password, request.cookies.get("pwmngrKey"), "de")
-            return render_template("content.html", s_result=passrecord)
-        elif "gen_new" in request.form:
-            id_for_pw = request.form.get("gen_new")
-            # print(id_for_pw)
-            # return "3"
-            passrecord = PassRecord.query.get_or_404(id_for_pw)
+            domain = tldextract.extract(url_read).registered_domain
+            if domain == "" or "." not in domain:
+                flash(f"Invalid URL detected: {domain}", category="warn")
+                return redirect(url_for("views.content"))
+            result = PassRecord.query.filter_by(url=domain).first()
+            if not result:
+                return redirect(url_for("views.new_entry", url=domain))
+            else:
+                result.password = master_key.decrypt(result.password)
+                return render_template("content.html", result=result)
+        elif "generate_new" in request.form:
+            entryId_for_update = request.form.get("generate_new")
+            entry_for_update = PassRecord.query.get(entryId_for_update)
             new_pw = pwgen("")
-            passrecord.password = str_encrypt(new_pw, request.cookies.get("pwmngrKey"), "en")
+            entry_for_update.password = master_key.encrypt(new_pw)
             db.session.commit()
-            flash(f"Record (id={id_for_pw}) updated successfully", category="good")
-            s_result = PassRecord.query.get_or_404(id_for_pw)
-            s_result.password = new_pw
-            return render_template("content.html", s_result=s_result)
-    # if id and id!=100:
-    try:
-        cookie_recid = int(request.cookies.get("recId")) # use cookie/session_storage instead of url/route parameter
-        if cookie_recid and cookie_recid != 100:
-            s_result=PassRecord.query.filter_by(id=cookie_recid).first()
-            s_result.password = str_encrypt(s_result.password, request.cookies.get("pwmngrKey"), "de")
-            resp = make_response( render_template("content.html", s_result=s_result) )
-            resp.delete_cookie("recId")
-            return resp
-    except TypeError:
-        print("Skipped cookie read")
-        pass
-    return render_template("content.html", s_result=None)
+            flash(f"Record (id={entryId_for_update}) updated successfully", category="good")
+            result = PassRecord.query.get_or_404(entryId_for_update)
+            result.password = new_pw
+            return render_template("content.html", result=result)
+    
+    entryId = request.cookies.get("entryId")
+    if entryId and entryId != str(secret_id):
+        result = PassRecord.query.get(int(entryId))
+        result.password = master_key.decrypt(result.password)
+        resp = make_response( render_template("content.html", result=result) )
+        resp.delete_cookie("entryId")
+        return resp
+    return render_template("content.html", result=None)
 
-@views.route("/update/<string:url>", methods=["GET", "POST"])
-def insert(url):
-    if not validateSess(): return redirect(url_for("views.masterpw"))
+@views.route("/add/<string:url>", methods=["GET", "POST"])
+def new_entry(url):
+    master_key = validateSession()
+    if not master_key: return redirect(url_for("views.index"))
+
     domain = tldextract.extract(url).registered_domain
-    if domain == "" or "." not in url: return "Error! Invalid url."
+    if domain == "" or "." not in url:
+        flash(f"Invalid URL detected: {domain}", category="warn")
+        return redirect(url_for("views.content"))
     if request.method=="POST":
-        login = request.form.get("login")
-        remark = request.form.get("remark")
-        password_gen = pwgen(request.form.get("password"))
-        password = str_encrypt(password_gen, request.cookies.get("pwmngrKey"), "en")
+        new_login = request.form.get("login")
+        new_remark = request.form.get("remark")
+        new_pw = pwgen(request.form.get("password"))
+        new_pw_enc = master_key.encrypt(new_pw)
         if PassRecord.query.filter_by(url=domain).first():
             return "Error! Record already exists."
         else:
-            new_passrecord = PassRecord(url=domain,login=login,remark=remark,password=password)
+            new_passrecord = PassRecord(url=domain,login=new_login,remark=new_remark,password=new_pw_enc)
             db.session.add(new_passrecord)
             db.session.commit()
+            flash("New entry created", category="good")
             resp = make_response( redirect(url_for("views.content")) )
-            resp.set_cookie("recId", str(PassRecord.query.filter_by(url=domain).first().id))
+            resp.set_cookie("entryId", str(PassRecord.query.filter_by(url=domain).first().id))
             return resp
-    return render_template("update.html", action="insert", url=domain)
+    return render_template("update.html", view_flag="insert", url=domain)
 
 @views.route("/update/<int:id>", methods=["GET", "POST"])
 def update(id):
-    if not validateSess(): return redirect(url_for("views.masterpw"))
-    if id == 100: return redirect(url_for("views.content"))
-    passrecord = PassRecord.query.filter_by(id=id).first()
+    master_key = validateSession()
+    if not master_key: return redirect(url_for("views.masterpw"))
+    if id == secret_id: return redirect(url_for("views.content"))
+    entry_for_update = PassRecord.query.get_or_404(id)
     if request.method=="POST":
-        newpw_input = request.form.get("password").replace(" ","")
-        passrecord.login = request.form.get("login")
-        passrecord.remark = request.form.get("remark")
-        if newpw_input=="":
-            pass
-        else:
-            passrecord.password = str_encrypt(pwgen(newpw_input), request.cookies.get("pwmngrKey"), "en")
+        entry_for_update.login = request.form.get("login")
+        entry_for_update.remark = request.form.get("remark")
+        new_pw = request.form.get("password").replace(" ","")
+        if new_pw != "":
+            entry_for_update.password = master_key.encrypt(pwgen(new_pw))
         db.session.commit()
         flash(f"Record (id={id}) updated successfully", category="good")
         resp = make_response( redirect(url_for("views.content")) )
-        resp.set_cookie("recId", str(id))
+        resp.set_cookie("entryId", str(id))
         return resp
-    return render_template("update.html", action="update", url=passrecord.url, login=passrecord.login, remark=passrecord.remark)
+    return render_template("update.html", view_flag="update", entry_for_update=entry_for_update)
 
 @views.route("/delete/<int:id>", methods=["GET"])
 def delete(id):
-    if not validateSess(): return redirect(url_for("views.masterpw"))
-    if id == 100: return redirect(url_for("views.content"))
-    passrecord_del = PassRecord.query.get_or_404(id) # get / get_or_404 parameter must be primary key
-    db.session.delete(passrecord_del)
+    if not validateSession(): return redirect(url_for("views.index"))
+    if id == secret_id: return redirect(url_for("views.content"))
+    entry_for_del = PassRecord.query.get_or_404(id) # get / get_or_404 parameter must be primary key
+    db.session.delete(entry_for_del)
     db.session.commit()
     flash(f"Record (id={id}) deleted!!", category="warn")
     return redirect(url_for("views.content"))

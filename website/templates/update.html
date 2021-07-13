@@ -1,17 +1,19 @@
 {% extends "base.html" %}
 {% block title %}
-  {% if action=="insert" %}-New
-  {% else %}-Modify
+  {% if view_flag == "insert" %}
+    -New
+  {% else %}
+    -Modify
   {% endif %}
 {% endblock %}
 {% block body %}
 <form class="form-group" method="POST">
-  {% if action=="insert" %}
-  <h1 class="heading">Add Record</h1>
+  {% if view_flag == "insert" %}
+    <h1 class="heading">Add Record</h1>
   {% else %}
-  <h1 class="heading">Update Record</h1>
+    <h1 class="heading">Update Record</h1>
   {% endif %}
-  <strong>for URL: https://{{ url }}</strong>
+  <strong>for URL: https://{{ entry_for_update.url }}</strong>
   <div>
     <label for="login">Login ID/ Email</label>
     <input
@@ -20,8 +22,8 @@
       id="login"
       name="login"
       placeholder="Login ID/ Email"
-      {% if action=="update" %}
-      value={{ login }}
+      {% if view_flag == "update" %}
+        value={{ entry_for_update.login }}
       {% endif %}
     />
   </div>
@@ -33,14 +35,14 @@
       id="remark"
       name="remark"
       placeholder="Additional Note"
-      {% if action=="update" %}
-      value={{ remark }}
+      {% if view_flag == "update" %}
+        value={{ entry_for_update.remark }}
       {% endif %}
     />
   </div>  
   <div>
     <label for="password">Password</label>
-    {% if action=="insert" %}
+    {% if view_flag == "insert" %}
     <input
       type="password"
       class="form-control"
@@ -60,8 +62,8 @@
   </div>
   <div class="gen-group">
     <ul class="list-notes">
-      {% if action=="update" %}
-      <li>Leave blank if you don't want to update password.</li>
+      {% if view_flag == "update" %}
+        <li>Leave blank if you don't want to update password.</li>
       {% endif %}
       <li>Enter punctuations-only will generate a password with punctuations pick from them.</li>
       <li>Or you can enter a password directly.</li>

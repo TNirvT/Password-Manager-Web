@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block title %}
-  {% if flag_=="new" %}
+  {% if view_flag=="create" %}
     -Welcome
+  {% elif view_flag=="locked" %}
+    -Locked
   {% else %}
-    -Verify
+    -Unlocked
   {% endif %}
 {% endblock %}
 {% block body %}
@@ -11,11 +13,11 @@
   <h1 class="heading">Master Password</h1>
   <div>
     <label for="master_pw">
-    {% if flag_=="new" %}
+    {% if view_flag=="create" %}
       Create a Master Password to start:
-    {% elif flag_=="verify" %}
+    {% elif view_flag=="locked" %}
       Verification
-    {% elif flag_=="logged_in" %}
+    {% else %}
       Change
     {% endif %}
     </label>
