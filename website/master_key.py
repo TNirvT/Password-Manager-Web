@@ -1,21 +1,13 @@
 import base64
 from os import path, urandom
-from pathlib import Path
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from .pw_gen import pwgen_basic
-from . import db_path
-
-secret_path = db_path.replace(".db", ".secr")
-if not path.exists(secret_path):
-    with open(secret_path, "w") as f:
-        f.write(pwgen_basic())
-with open(secret_path) as f:
-    secret_phrase = f.read()
+from .pw_gen import phrase_gen
+from . import db_path, secret_phrase
 
 class MasterKey:
     def __init__(self, key):

@@ -1,15 +1,17 @@
 from os import remove
 from shutil import copy
+from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response
 import tldextract
 
 from .master_key import MasterKey
-from .pw_gen import pwgen
+from .pw_gen import phrase_gen, pwgen
 from .models import PassRecord
 from . import db, db_path, secret_id
 
 views = Blueprint("views", __name__)
+sessions = []
 
 def validateSession():
     cookieKey = request.cookies.get("pwmngrMaster")
@@ -19,6 +21,37 @@ def validateSession():
         if master_key.unlock(None, secret_entry.password):
             return master_key
     return None
+
+#############################
+def remove_expired():
+    global sessions
+    for session in sessions:
+        age = datetime.now()-session["time"]
+        if age.total_seconds() > 30*60:
+            sessions.remove(session)
+
+def add_session(key):
+    remove_expired()
+    new_session = {"id":phrase_gen(10,10), "key":key, "time":datetime.now()}
+    global sessions
+    sessions.append(new_session)
+    return new_session["id"]
+
+def validateSession_new():
+    remove_expired()
+    cookieId = request.cookies.get("pwmngrMaster")
+    if cookieId:
+        global sessions
+        for session in sessions:
+            if session["id"] == int(cookieId):
+                session["time"] = datetime.now()
+                master_key = MasterKey(session["key"])
+                secret_entry = PassRecord.query.get(secret_id)
+                if master_key.unlock(None, secret_entry.password):
+                    return master_key
+    return None
+
+#############################
 
 @views.route("/", methods=["GET","POST"])
 def index():
@@ -128,7 +161,7 @@ def new_entry(url):
     if not master_key: return redirect(url_for("views.index"))
 
     domain = tldextract.extract(url).registered_domain
-    if domain == "" or "." not in url:
+    if domain == "" or "." not in domain:
         flash(f"Invalid URL detected: {domain}", category="warn")
         return redirect(url_for("views.content"))
     if request.method=="POST":
@@ -146,7 +179,7 @@ def new_entry(url):
             resp = make_response( redirect(url_for("views.content")) )
             resp.set_cookie("entryId", str(PassRecord.query.filter_by(url=domain).first().id))
             return resp
-    return render_template("update.html", view_flag="insert", url=domain)
+    return render_template("update.html", view_flag="insert", domain=domain)
 
 @views.route("/update/<int:id>", methods=["GET", "POST"])
 def update(id):
@@ -165,13 +198,13 @@ def update(id):
         resp = make_response( redirect(url_for("views.content")) )
         resp.set_cookie("entryId", str(id))
         return resp
-    return render_template("update.html", view_flag="update", entry_for_update=entry_for_update)
+    return render_template("update.html", view_flag="update", entry_for_update=entry_for_update, domain=entry_for_update.url)
 
 @views.route("/delete/<int:id>", methods=["GET"])
 def delete(id):
     if not validateSession(): return redirect(url_for("views.index"))
     if id == secret_id: return redirect(url_for("views.content"))
-    entry_for_del = PassRecord.query.get_or_404(id) # get / get_or_404 parameter must be primary key
+    entry_for_del = PassRecord.query.get_or_404(id)
     db.session.delete(entry_for_del)
     db.session.commit()
     flash(f"Record (id={id}) deleted!!", category="warn")

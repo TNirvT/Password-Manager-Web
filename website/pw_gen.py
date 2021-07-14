@@ -1,10 +1,10 @@
 import string
 from random import choice, randint, sample
 
-def pwgen_basic():
+def phrase_gen(min_len, max_len):
     characters = string.ascii_letters + string.digits
-    password =  "".join(choice(characters) for x in range(randint(18, 22)))
-    return password
+    phrase =  "".join(choice(characters) for x in range(randint(min_len, max_len)))
+    return phrase
 
 # empty input: password with most punctuations choices
 # punctuations-only input: password with these input choices
