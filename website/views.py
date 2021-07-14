@@ -1,4 +1,4 @@
-from os import remove
+from os import remove, sep
 from shutil import copy
 from datetime import datetime
 
@@ -43,7 +43,7 @@ def validateSession_new():
     if cookieId:
         global sessions
         for session in sessions:
-            if session["id"] == int(cookieId):
+            if session["id"] == cookieId:
                 session["time"] = datetime.now()
                 master_key = MasterKey(session["key"])
                 secret_entry = PassRecord.query.get(secret_id)
@@ -55,7 +55,8 @@ def validateSession_new():
 
 @views.route("/", methods=["GET","POST"])
 def index():
-    master_key = validateSession()
+    # master_key = validateSession()
+    master_key = validateSession_new()
     secret_entry = PassRecord.query.get(secret_id)
     if secret_entry and not master_key:
         view_flag = "locked"
@@ -66,7 +67,9 @@ def index():
                 view_flag = "unlocked"
                 flash("Master password correct", category="good")
                 resp = make_response( redirect(url_for("views.content")) )
-                resp.set_cookie("pwmngrMaster", input_master_key.key)
+                # resp.set_cookie("pwmngrMaster", input_master_key.key)
+                resp.set_cookie("pwmngrMaster", add_session(input_master_key.key))
+                print(*sessions,sep="\n")
                 return resp
             else:
                 flash("Incorrect password!", category="warn")
@@ -80,7 +83,8 @@ def index():
             db.session.commit()
             flash("Master password created", category="good")
             resp = make_response( redirect(url_for("views.content")) )
-            resp.set_cookie("pwmngrMaster", new_master_key.key)
+            # resp.set_cookie("pwmngrMaster", new_master_key.key)
+            resp.set_cookie("pwmngrMaster", add_session(new_master_key.key))
             return resp
     else:
         view_flag = "unlocked"
@@ -106,13 +110,16 @@ def index():
             remove(db_path+".old")
             flash("Master password changed successfully", category="good")
             resp = make_response( redirect(url_for("views.content")) )
-            resp.set_cookie("pwmngrMaster", master_key.key)
+            # resp.set_cookie("pwmngrMaster", master_key.key)
+            resp.set_cookie("pwmngrMaster", add_session(master_key.key))
+            print(*sessions,sep="\n")
             return resp
     return render_template("index.html", view_flag=view_flag)
 
 @views.route("/lock")
 def master_change():
-    if not validateSession(): return redirect(url_for("views.index"))
+    # if not validateSession(): return redirect(url_for("views.index"))
+    if not validateSession_new(): return redirect(url_for("views.index"))
     flash("Password vault locked", category="warn")
     resp = make_response( redirect(url_for("views.index")) )
     resp.delete_cookie("pwmngrMaster")
@@ -120,7 +127,8 @@ def master_change():
 
 @views.route("/content", methods=["GET","POST"])
 def content():
-    master_key = validateSession()
+    # master_key = validateSession()
+    master_key = validateSession_new()
     if not master_key: return redirect(url_for("views.index"))
     if request.method == "POST":
         if "url_read" in request.form:
@@ -157,7 +165,8 @@ def content():
 
 @views.route("/add/<string:url>", methods=["GET", "POST"])
 def new_entry(url):
-    master_key = validateSession()
+    # master_key = validateSession()
+    master_key = validateSession_new()
     if not master_key: return redirect(url_for("views.index"))
 
     domain = tldextract.extract(url).registered_domain
@@ -183,7 +192,8 @@ def new_entry(url):
 
 @views.route("/update/<int:id>", methods=["GET", "POST"])
 def update(id):
-    master_key = validateSession()
+    # master_key = validateSession()
+    master_key = validateSession_new()
     if not master_key: return redirect(url_for("views.masterpw"))
     if id == secret_id: return redirect(url_for("views.content"))
     entry_for_update = PassRecord.query.get_or_404(id)
@@ -202,7 +212,8 @@ def update(id):
 
 @views.route("/delete/<int:id>", methods=["GET"])
 def delete(id):
-    if not validateSession(): return redirect(url_for("views.index"))
+    # if not validateSession(): return redirect(url_for("views.index"))
+    if not validateSession_new(): return redirect(url_for("views.index"))
     if id == secret_id: return redirect(url_for("views.content"))
     entry_for_del = PassRecord.query.get_or_404(id)
     db.session.delete(entry_for_del)
