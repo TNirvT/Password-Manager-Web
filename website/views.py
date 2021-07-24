@@ -33,41 +33,42 @@ def validate_session():
 
 #############################
 
-@views.route("/", methods=["GET","POST"])
+@views.route("/", methods=["GET"])
 def index():
     master_key = validate_session()
     secret_entry = PassRecord.query.get(secret_id)
     if secret_entry and not master_key:
         # Database exists, not logged in yet
-        view_flag = "locked"
-        if request.method == "POST":
-            pw = request.form.get("master_pw")
-            input_master_key = MasterKey(None)
-            if input_master_key.unlock(pw, secret_entry.password):
-                view_flag = "unlocked"
-                flash("Master password correct", category="good")
-                resp = make_response( redirect(url_for("views.content")) )
-                add_session(input_master_key.key)
-                return resp
-            else:
-                flash("Incorrect password!", category="warn")
+        return render_template("index.html", view_flag="locked")
     elif not master_key:
         # Database doesn't exist, not logged in yet
-        view_flag = "create"
-        if request.method == "POST":
-            pw = request.form.get("master_pw")
-            new_master_key = MasterKey(None)
-            new_secret = PassRecord(id=secret_id, url="$dum.my/url$", password=new_master_key.set_pw(pw))
-            db.session.add(new_secret)
-            db.session.commit()
-            flash("Master password created", category="good")
-            resp = make_response( redirect(url_for("views.content")) )
-            add_session(new_master_key.key)
-            return resp
+        return render_template("index.html", view_flag="create")
     else:
         # Logged in, redirect to content
         return redirect(url_for("views.content"))
-    return render_template("index.html", view_flag=view_flag)
+
+@views.route("/login", methods=["POST"])
+def login():
+    pw = request.form.get("master_pw")
+    master_key = MasterKey(None)
+    secret_entry = PassRecord.query.get(secret_id)
+    if secret_entry:
+        # Database already exists
+        if master_key.unlock(pw, secret_entry.password):
+            flash("Master password correct", category="good")
+            add_session(master_key.key)
+            return make_response( redirect(url_for("views.content")) )
+        else:
+            flash("Incorrect password!", category="warn")
+            return make_response( redirect(url_for("views.index")) )
+    else:
+        # Need to create database
+        new_secret = PassRecord(id=secret_id, url="$dum.my/url$", password=master_key.set_pw(pw))
+        db.session.add(new_secret)
+        db.session.commit()
+        flash("Master password created", category="good")
+        add_session(master_key.key)
+        return make_response( redirect(url_for("views.content")) )
 
 @views.route("/change_pw", methods=["POST"])
 def master_change():
@@ -108,7 +109,7 @@ def master_lock():
 @views.route("/settings")
 def settings():
     if not validate_session(): return redirect(url_for("views.index"))
-    return render_template("settings.html")
+    return render_template("settings.html", logged_in=True)
 
 @views.route("/content", methods=["GET","POST"])
 def content():
@@ -126,7 +127,7 @@ def content():
                 return redirect(url_for("views.new_entry", url=domain))
             else:
                 result.password = master_key.decrypt(result.password)
-                return render_template("content.html", result=result)
+                return render_template("content.html", result=result, logged_in=True)
         elif "generate_new" in request.form:
             entryId_for_update = request.form.get("generate_new")
             entry_for_update = PassRecord.query.get(entryId_for_update)
@@ -136,16 +137,16 @@ def content():
             flash(f"Record (id={entryId_for_update}) updated successfully", category="good")
             result = PassRecord.query.get_or_404(entryId_for_update)
             result.password = new_pw
-            return render_template("content.html", result=result)
+            return render_template("content.html", result=result, logged_in=True)
     
     entryId = request.cookies.get("entryId")
     if entryId and entryId != str(secret_id):
         result = PassRecord.query.get(int(entryId))
         result.password = master_key.decrypt(result.password)
-        resp = make_response( render_template("content.html", result=result) )
+        resp = make_response( render_template("content.html", result=result, logged_in=True) )
         resp.delete_cookie("entryId")
         return resp
-    return render_template("content.html", result=None)
+    return render_template("content.html", result=None, logged_in=True)
 
 @views.route("/add/<string:url>", methods=["GET", "POST"])
 def new_entry(url):
@@ -171,7 +172,7 @@ def new_entry(url):
             resp = make_response( redirect(url_for("views.content")) )
             resp.set_cookie("entryId", str(PassRecord.query.filter_by(url=domain).first().id))
             return resp
-    return render_template("update.html", view_flag="insert", domain=domain)
+    return render_template("update.html", view_flag="insert", domain=domain, logged_in=True)
 
 @views.route("/update/<int:id>", methods=["GET", "POST"])
 def update(id):
@@ -190,7 +191,11 @@ def update(id):
         resp = make_response( redirect(url_for("views.content")) )
         resp.set_cookie("entryId", str(id))
         return resp
-    return render_template("update.html", view_flag="update", entry_for_update=entry_for_update, domain=entry_for_update.url)
+    return render_template("update.html",
+        view_flag="update",
+        entry_for_update=entry_for_update,
+        domain=entry_for_update.url,
+        logged_in=True)
 
 @views.route("/delete/<int:id>", methods=["GET"])
 def delete(id):

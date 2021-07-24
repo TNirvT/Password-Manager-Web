@@ -11,8 +11,10 @@
   <nav class="navbar">
     <div class="navbar-links">
       <a class="nav-item" href="/">Home</a>
+      {% if logged_in %}
       <a class="nav-item" href="/lock">Lock</a>
       <a class="nav-item" href="/settings">Settings</a>
+      {% endif %}
     </div>
   </nav>
   {% with messages = get_flashed_messages(with_categories=True) %}
