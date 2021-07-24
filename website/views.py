@@ -98,6 +98,7 @@ def master_change():
     add_session(master_key.key)
     return resp
 
+# TODO: see if we can redirect to index automatically if not logged in
 @views.route("/lock")
 def master_lock():
     if not validate_session(): return redirect(url_for("views.index"))
@@ -106,11 +107,13 @@ def master_lock():
     remove_session()
     return resp
 
+# TODO: see if we can pass logged_in=True automatically
 @views.route("/settings")
 def settings():
     if not validate_session(): return redirect(url_for("views.index"))
     return render_template("settings.html", logged_in=True)
 
+# TODO: don't use same url for GET and form POST
 @views.route("/content", methods=["GET","POST"], defaults={'entry_id': None})
 @views.route("/content/<int:entry_id>", methods=["GET","POST"])
 def content(entry_id):
@@ -147,6 +150,7 @@ def content(entry_id):
 
     return render_template("content.html", result=None, logged_in=True)
 
+# TODO: don't use same url for GET and form POST
 @views.route("/add/<string:url>", methods=["GET", "POST"])
 def new_entry(url):
     master_key = validate_session()
@@ -172,10 +176,11 @@ def new_entry(url):
             return redirect(url_for("views.content", entry_id=entry_id))
     return render_template("update.html", view_flag="insert", domain=domain, logged_in=True)
 
+# TODO: don't use same url for GET and form POST
 @views.route("/update/<int:id>", methods=["GET", "POST"])
 def update(id):
     master_key = validate_session()
-    if not master_key: return redirect(url_for("views.masterpw"))
+    if not master_key: return redirect(url_for("views.index"))
     if id == secret_id: return redirect(url_for("views.content"))
     entry_for_update = PassRecord.query.get_or_404(id)
     if request.method=="POST":
@@ -193,6 +198,8 @@ def update(id):
         domain=entry_for_update.url,
         logged_in=True)
 
+# TODO don't use GET to modify data
+# https://stackoverflow.com/questions/3915917/make-a-link-use-post-instead-of-get
 @views.route("/delete/<int:id>", methods=["GET"])
 def delete(id):
     if not validate_session(): return redirect(url_for("views.index"))
