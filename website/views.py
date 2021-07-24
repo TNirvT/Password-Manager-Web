@@ -111,8 +111,9 @@ def settings():
     if not validate_session(): return redirect(url_for("views.index"))
     return render_template("settings.html", logged_in=True)
 
-@views.route("/content", methods=["GET","POST"])
-def content():
+@views.route("/content", methods=["GET","POST"], defaults={'entry_id': None})
+@views.route("/content/<int:entry_id>", methods=["GET","POST"])
+def content(entry_id):
     master_key = validate_session()
     if not master_key: return redirect(url_for("views.index"))
     if request.method == "POST":
@@ -126,8 +127,8 @@ def content():
             if not result:
                 return redirect(url_for("views.new_entry", url=domain))
             else:
-                result.password = master_key.decrypt(result.password)
-                return render_template("content.html", result=result, logged_in=True)
+                # TODO: can we return result and update url in same request
+                return redirect(url_for("views.content", entry_id=result.id))
         elif "generate_new" in request.form:
             entryId_for_update = request.form.get("generate_new")
             entry_for_update = PassRecord.query.get(entryId_for_update)
@@ -139,13 +140,11 @@ def content():
             result.password = new_pw
             return render_template("content.html", result=result, logged_in=True)
     
-    entryId = request.cookies.get("entryId")
-    if entryId and entryId != str(secret_id):
-        result = PassRecord.query.get(int(entryId))
+    if entry_id and entry_id != str(secret_id):
+        result = PassRecord.query.get(int(entry_id))
         result.password = master_key.decrypt(result.password)
-        resp = make_response( render_template("content.html", result=result, logged_in=True) )
-        resp.delete_cookie("entryId")
-        return resp
+        return render_template("content.html", result=result, logged_in=True)
+
     return render_template("content.html", result=None, logged_in=True)
 
 @views.route("/add/<string:url>", methods=["GET", "POST"])
@@ -169,9 +168,8 @@ def new_entry(url):
             db.session.add(new_passrecord)
             db.session.commit()
             flash("New entry created", category="good")
-            resp = make_response( redirect(url_for("views.content")) )
-            resp.set_cookie("entryId", str(PassRecord.query.filter_by(url=domain).first().id))
-            return resp
+            entry_id = PassRecord.query.filter_by(url=domain).first().id
+            return redirect(url_for("views.content", entry_id=entry_id))
     return render_template("update.html", view_flag="insert", domain=domain, logged_in=True)
 
 @views.route("/update/<int:id>", methods=["GET", "POST"])
@@ -188,9 +186,7 @@ def update(id):
             entry_for_update.password = master_key.encrypt(pwgen(new_pw))
         db.session.commit()
         flash(f"Record (id={id}) updated successfully", category="good")
-        resp = make_response( redirect(url_for("views.content")) )
-        resp.set_cookie("entryId", str(id))
-        return resp
+        return redirect(url_for("views.content", entry_id=id))
     return render_template("update.html",
         view_flag="update",
         entry_for_update=entry_for_update,
