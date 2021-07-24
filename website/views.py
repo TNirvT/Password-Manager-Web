@@ -38,6 +38,7 @@ def index():
     master_key = validate_session()
     secret_entry = PassRecord.query.get(secret_id)
     if secret_entry and not master_key:
+        # Database exists, not logged in yet
         view_flag = "locked"
         if request.method == "POST":
             pw = request.form.get("master_pw")
@@ -51,6 +52,7 @@ def index():
             else:
                 flash("Incorrect password!", category="warn")
     elif not master_key:
+        # Database doesn't exist, not logged in yet
         view_flag = "create"
         if request.method == "POST":
             pw = request.form.get("master_pw")
@@ -63,40 +65,50 @@ def index():
             add_session(new_master_key.key)
             return resp
     else:
-        view_flag = "unlocked"
-        if request.method == "POST":
-            copy(db_path, db_path+".old")
-            all_rows = PassRecord.query.all()
-
-            all_dec = []
-            for row in all_rows:
-                data_dec = master_key.decrypt(row.password)
-                all_dec.append((row.id, data_dec))
-            
-            pw = request.form.get("master_pw")
-            PassRecord.query.get(secret_id).password = master_key.set_pw(pw)
-            
-            for row in all_dec:
-                if row[0] == secret_id:
-                    continue
-                data_enc = master_key.encrypt(row[1])
-                PassRecord.query.get(row[0]).password = data_enc
-            db.session.commit()
-
-            remove(db_path+".old")
-            flash("Master password changed successfully", category="good")
-            resp = make_response( redirect(url_for("views.content")) )
-            add_session(master_key.key)
-            return resp
+        # Logged in, redirect to content
+        return redirect(url_for("views.content"))
     return render_template("index.html", view_flag=view_flag)
 
-@views.route("/lock")
+@views.route("/change_pw", methods=["POST"])
 def master_change():
+    master_key = validate_session()
+
+    copy(db_path, db_path+".old")
+    all_rows = PassRecord.query.all()
+
+    all_dec = []
+    for row in all_rows:
+        data_dec = master_key.decrypt(row.password)
+        all_dec.append((row.id, data_dec))
+
+    pw = request.form.get("master_pw")
+    PassRecord.query.get(secret_id).password = master_key.set_pw(pw)
+
+    for row in all_dec:
+        if row[0] == secret_id:
+            continue
+        data_enc = master_key.encrypt(row[1])
+        PassRecord.query.get(row[0]).password = data_enc
+    db.session.commit()
+
+    remove(db_path+".old")
+    flash("Master password changed successfully", category="good")
+    resp = make_response( redirect(url_for("views.content")) )
+    add_session(master_key.key)
+    return resp
+
+@views.route("/lock")
+def master_lock():
     if not validate_session(): return redirect(url_for("views.index"))
     flash("Password vault locked", category="warn")
     resp = make_response( redirect(url_for("views.index")) )
     remove_session()
     return resp
+
+@views.route("/settings")
+def settings():
+    if not validate_session(): return redirect(url_for("views.index"))
+    return render_template("settings.html")
 
 @views.route("/content", methods=["GET","POST"])
 def content():
