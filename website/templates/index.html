@@ -1,24 +1,20 @@
 {% extends "base.html" %}
 {% block title %}
   {% if view_flag=="create" %}
-    -Welcome
-  {% elif view_flag=="locked" %}
-    -Locked
+    - Welcome
   {% else %}
-    -Unlocked
+    - Locked
   {% endif %}
 {% endblock %}
 {% block body %}
-<form class="form-group" method="POST">
+<form class="form-group" method="POST" action="/login">
   <h1 class="heading">Master Password</h1>
   <div>
     <label for="master_pw">
     {% if view_flag=="create" %}
       Create a Master Password to start:
-    {% elif view_flag=="locked" %}
-      Verification
     {% else %}
-      Change
+      Verification
     {% endif %}
     </label>
     <input
@@ -29,6 +25,12 @@
       placeholder="Enter Master Password"
     />
   </div>
-  <button type="submit" class="btn-submit">Unlock</button>
+  <button type="submit" class="btn-submit">
+    {% if view_flag=="create" %}
+      Create
+    {% else %}
+      Unlock
+    {% endif %}
+  </button>
 </form>
 {% endblock %}

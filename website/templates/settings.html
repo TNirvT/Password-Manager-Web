@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}
+  - Settings
+{% endblock %}
+{% block body %}
+<form class="form-group" method="POST" action="/change_pw">
+  <h1 class="heading">Change Master Password</h1>
+  <div>
+    <label for="master_pw">
+      New password
+    </label>
+    <input
+      type="password"
+      class="form-control"
+      id="master_pw"
+      name="master_pw"
+      placeholder="Enter Master Password"
+    />
+  </div>
+  <button type="submit" class="btn-submit">Change</button>
+</form>
+{% endblock %}
