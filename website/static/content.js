@@ -1,6 +1,6 @@
 const btnCopy=document.getElementById("btn-copyPass");
 if (btnCopy.value) {
-    btnCopy.addEventListener("click", function (){
+    btnCopy.addEventListener("click", () => {
     navigator.clipboard.writeText(btnCopy.value);
     console.log("copy btn clicked")
     })
@@ -21,3 +21,8 @@ function btnPost(){
 // btnGen.addEventListener("click", function (){
 //     btnPost();
 // })
+
+const anchorDel=document.getElementById("anchor-del");
+anchorDel.addEventListener("click", () => {
+    document.getElementById('form-del').submit()
+})

@@ -6,9 +6,9 @@ def phrase_gen(min_len, max_len):
     phrase =  "".join(choice(characters) for x in range(randint(min_len, max_len)))
     return phrase
 
-# empty input: password with most punctuations choices
+# empty input: password may include the most common punctuations
 # punctuations-only input: password with these input choices
-# mixed input: directly input password
+# mixed input: directly return input as password
 def pwgen(in_put):
     in_put = str(in_put).replace(" ","")
     if in_put != "" and not __allpunct(in_put): return in_put

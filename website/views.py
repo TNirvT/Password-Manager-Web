@@ -1,28 +1,27 @@
-from os import remove, sep
+from os import remove
 from shutil import copy
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response
-import flask
+from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response, session
 import tldextract
 
 from .master_key import MasterKey
-from .pw_gen import phrase_gen, pwgen
+from .pw_gen import pwgen
 from .models import PassRecord
-from . import db, db_path, secret_id
+from . import db, secret_id
 
 views = Blueprint("views", __name__)
 
 #############################
 
 def add_session(key):
-    flask.session["key"] = key
+    session["key"] = key
 
 def remove_session():
-    flask.session.pop("key")
+    session.pop("key")
 
 def validate_session():
-    key = flask.session.get("key", None)
+    key = session.get("key", None)
     if not key:
         return None
     master_key = MasterKey(key)
@@ -57,10 +56,10 @@ def login():
         if master_key.unlock(pw, secret_entry.password):
             flash("Master password correct", category="good")
             add_session(master_key.key)
-            return make_response( redirect(url_for("views.content")) )
+            return redirect(url_for("views.content"))
         else:
             flash("Incorrect password!", category="warn")
-            return make_response( redirect(url_for("views.index")) )
+            return redirect(url_for("views.index"))
     else:
         # Need to create database
         new_secret = PassRecord(id=secret_id, url="$dum.my/url$", password=master_key.set_pw(pw))
@@ -68,13 +67,13 @@ def login():
         db.session.commit()
         flash("Master password created", category="good")
         add_session(master_key.key)
-        return make_response( redirect(url_for("views.content")) )
+        return redirect(url_for("views.content"))
 
 @views.route("/change_pw", methods=["POST"])
 def master_change():
     master_key = validate_session()
 
-    copy(db_path, db_path+".old")
+    # copy(db_path, db_path+".old")
     all_rows = PassRecord.query.all()
 
     all_dec = []
@@ -92,7 +91,7 @@ def master_change():
         PassRecord.query.get(row[0]).password = data_enc
     db.session.commit()
 
-    remove(db_path+".old")
+    # remove(db_path+".old")
     flash("Master password changed successfully", category="good")
     resp = make_response( redirect(url_for("views.content")) )
     add_session(master_key.key)
@@ -113,35 +112,11 @@ def settings():
     if not validate_session(): return redirect(url_for("views.index"))
     return render_template("settings.html", logged_in=True)
 
-# TODO: don't use same url for GET and form POST
-@views.route("/content", methods=["GET","POST"], defaults={'entry_id': None})
-@views.route("/content/<int:entry_id>", methods=["GET","POST"])
+@views.route("/content", methods=["GET"], defaults={'entry_id': None})
+@views.route("/content/<int:entry_id>", methods=["GET"])
 def content(entry_id):
     master_key = validate_session()
     if not master_key: return redirect(url_for("views.index"))
-    if request.method == "POST":
-        if "url_read" in request.form:
-            url_read = request.form.get("url_read")
-            domain = tldextract.extract(url_read).registered_domain
-            if domain == "" or "." not in domain:
-                flash(f"Invalid URL detected: {domain}", category="warn")
-                return redirect(url_for("views.content"))
-            result = PassRecord.query.filter_by(url=domain).first()
-            if not result:
-                return redirect(url_for("views.new_entry", url=domain))
-            else:
-                # TODO: can we return result and update url in same request
-                return redirect(url_for("views.content", entry_id=result.id))
-        elif "generate_new" in request.form:
-            entryId_for_update = request.form.get("generate_new")
-            entry_for_update = PassRecord.query.get(entryId_for_update)
-            new_pw = pwgen("")
-            entry_for_update.password = master_key.encrypt(new_pw)
-            db.session.commit()
-            flash(f"Record (id={entryId_for_update}) updated successfully", category="good")
-            result = PassRecord.query.get_or_404(entryId_for_update)
-            result.password = new_pw
-            return render_template("content.html", result=result, logged_in=True)
     
     if entry_id and entry_id != str(secret_id):
         result = PassRecord.query.get(int(entry_id))
@@ -150,8 +125,36 @@ def content(entry_id):
 
     return render_template("content.html", result=None, logged_in=True)
 
-# TODO: don't use same url for GET and form POST
-@views.route("/add/<string:url>", methods=["GET", "POST"])
+@views.route("/search", methods=["POST"])
+def search_db():
+    url_read = request.form.get("url_read")
+    domain = tldextract.extract(url_read).registered_domain
+    if domain == "" or "." not in domain:
+        flash(f"Invalid URL detected: {domain}", category="warn")
+        return redirect(url_for("views.content"))
+    result = PassRecord.query.filter_by(url=domain).first()
+    if not result:
+        return redirect(url_for("views.new_entry", url=domain))
+    else:
+        # TODO: can we return result and update url in same request
+        return redirect(url_for("views.content", entry_id=result.id))
+
+@views.route("/generate_new", methods=["POST"])
+def generate_new_pw():
+    master_key = validate_session()
+    entryId_for_update = request.form.get("generate_new")
+    if entryId_for_update == secret_id:
+        return "Invalid ID"
+    entry_for_update = PassRecord.query.get(entryId_for_update)
+    new_pw = pwgen("")
+    entry_for_update.password = master_key.encrypt(new_pw)
+    db.session.commit()
+    flash(f"Record (id={entryId_for_update}) updated successfully", category="good")
+    result = PassRecord.query.get_or_404(entryId_for_update)
+    result.password = new_pw
+    return render_template("content.html", result=result, logged_in=True)
+
+@views.route("/add/<string:url>", methods=["GET"])
 def new_entry(url):
     master_key = validate_session()
     if not master_key: return redirect(url_for("views.index"))
@@ -160,47 +163,54 @@ def new_entry(url):
     if domain == "" or "." not in domain:
         flash(f"Invalid URL detected: {domain}", category="warn")
         return redirect(url_for("views.content"))
-    if request.method=="POST":
-        new_login = request.form.get("login")
-        new_remark = request.form.get("remark")
-        new_pw = pwgen(request.form.get("password"))
-        new_pw_enc = master_key.encrypt(new_pw)
-        if PassRecord.query.filter_by(url=domain).first():
-            return "Error! Record already exists."
-        else:
-            new_passrecord = PassRecord(url=domain,login=new_login,remark=new_remark,password=new_pw_enc)
-            db.session.add(new_passrecord)
-            db.session.commit()
-            flash("New entry created", category="good")
-            entry_id = PassRecord.query.filter_by(url=domain).first().id
-            return redirect(url_for("views.content", entry_id=entry_id))
+    
     return render_template("update.html", view_flag="insert", domain=domain, logged_in=True)
 
-# TODO: don't use same url for GET and form POST
-@views.route("/update/<int:id>", methods=["GET", "POST"])
+@views.route("/insert_db/<string:domain>", methods=["POST"])
+def insert_db(domain):
+    master_key = validate_session()
+
+    new_login = request.form.get("login")
+    new_remark = request.form.get("remark")
+    new_pw = pwgen(request.form.get("password"))
+    new_pw_enc = master_key.encrypt(new_pw)
+    if PassRecord.query.filter_by(url=domain).first():
+        return "Error! Record already exists."
+    else:
+        new_passrecord = PassRecord(url=domain,login=new_login,remark=new_remark,password=new_pw_enc)
+        db.session.add(new_passrecord)
+        db.session.commit()
+        flash("New entry created", category="good")
+        entry_id = PassRecord.query.filter_by(url=domain).first().id
+        return redirect(url_for("views.content", entry_id=entry_id))
+
+@views.route("/update/<int:id>", methods=["GET"])
 def update(id):
     master_key = validate_session()
     if not master_key: return redirect(url_for("views.index"))
     if id == secret_id: return redirect(url_for("views.content"))
     entry_for_update = PassRecord.query.get_or_404(id)
-    if request.method=="POST":
-        entry_for_update.login = request.form.get("login")
-        entry_for_update.remark = request.form.get("remark")
-        new_pw = request.form.get("password").replace(" ","")
-        if new_pw != "":
-            entry_for_update.password = master_key.encrypt(pwgen(new_pw))
-        db.session.commit()
-        flash(f"Record (id={id}) updated successfully", category="good")
-        return redirect(url_for("views.content", entry_id=id))
     return render_template("update.html",
         view_flag="update",
         entry_for_update=entry_for_update,
         domain=entry_for_update.url,
         logged_in=True)
 
-# TODO don't use GET to modify data
-# https://stackoverflow.com/questions/3915917/make-a-link-use-post-instead-of-get
-@views.route("/delete/<int:id>", methods=["GET"])
+@views.route("/update_db/<int:id>", methods=["POST"])
+def update_db(id):
+    master_key = validate_session()
+    if id == secret_id: return "Error! Invalid ID"
+    entry_for_update = PassRecord.query.get_or_404(id)
+    entry_for_update.login = request.form.get("login")
+    entry_for_update.remark = request.form.get("remark")
+    new_pw = request.form.get("password").replace(" ","")
+    if new_pw != "":
+        entry_for_update.password = master_key.encrypt(pwgen(new_pw))
+    db.session.commit()
+    flash(f"Record (id={id}) updated successfully", category="good")
+    return redirect(url_for("views.content", entry_id=id))
+
+@views.route("/delete/<int:id>", methods=["POST"])
 def delete(id):
     if not validate_session(): return redirect(url_for("views.index"))
     if id == secret_id: return redirect(url_for("views.content"))

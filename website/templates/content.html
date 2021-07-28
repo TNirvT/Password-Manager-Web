@@ -3,7 +3,7 @@
   - Vault
 {% endblock %}
 {% block body %}
-<form class="form-group" method="POST">
+<form class="form-group" method="POST" action="/search">
   <h1 class="heading">Password Vault</h1>
   <div>
     <label for="url_read">Search</label>
@@ -40,13 +40,15 @@
       <td>{{ result.remark }}</td>
       <td>
         <a href="/update/{{ result.id }}">Update</a><br>
-        <a href="/delete/{{ result.id }}">Delete</a>
+        <form id="form-del" method="POST" action="/delete/{{ result.id }}">
+          <a id="anchor-del" href="#">Delete</a>
+        </form>
       </td>
     </tr>
   </div>
 </table>
 <!-- <div class="gen-group"> -->
-<form class="form-group" method="POST">
+<form class="form-group" method="POST" action="/generate_new">
   <button type="submit" id="generate_new" name="generate_new" value={{ result.id }}>Generate New Password</button><br>
   <ul class="list-notes">
     <li>Generate New Password will update the record automatically.</li>
@@ -55,7 +57,7 @@
 </form>
 <script
   type="text/javascript"
-  src="{{ url_for('static', filename='clipboard.js') }}">
+  src="{{ url_for('static', filename='content.js') }}">
 </script>
 {% endif %}
 {% endblock %}

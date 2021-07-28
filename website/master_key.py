@@ -7,26 +7,17 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from .pw_gen import phrase_gen
-from . import db_path, secret_phrase
+from . import salt_path, secret_phrase
 
 class MasterKey:
     def __init__(self, key):
         self.key = key
-        self.salt_path = db_path.replace(".db", ".salt")
-
-    # def exists(self):
-    #     return Path(self.key_path).is_file() and Path(self.salt_path).is_file()
+        self.salt_path = salt_path
 
     def unlock(self, pw, encrypted_secret):
-        # with open(self.key_path, "rb") as f:     # rb = read bytes
-        #     self.key = f.read()
         with open(self.salt_path, "rb") as f:     # rb = read bytes
             self.salt = f.read()
 
-        # valid = self.decrypt(secret_pass) == self.__pw_to_key(pw)
-        # if valid:
-        #     self.fernet = Fernet(self.key)
-        # return valid
         if pw:
             self.key = self.__pw_to_key(pw)
         self.fernet = Fernet(self.key)
@@ -45,8 +36,6 @@ class MasterKey:
             f.write(self.salt)
 
         self.key = self.__pw_to_key(pw)
-        # with open(self.key_path, "wb") as f:
-        #     f.write(self.key)
 
         self.fernet = Fernet(self.key)
         return self.encrypt(secret_phrase)

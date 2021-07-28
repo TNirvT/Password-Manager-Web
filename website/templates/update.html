@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 {% block title %}
   {% if view_flag == "insert" %}
-    -New
+    - New
   {% else %}
-    -Modify
+    - Modify
   {% endif %}
 {% endblock %}
 {% block body %}
-<form class="form-group" method="POST">
-  {% if view_flag == "insert" %}
+{% if view_flag == "insert" %}
+<form class="form-group" method="POST" action="/insert_db/{{ domain }}">
     <h1 class="heading">Add Record</h1>
-  {% else %}
+{% else %}
+<form class="form-group" method="POST" action="/update_db/{{ entry_for_update.id }}">
     <h1 class="heading">Update Record</h1>
-  {% endif %}
+{% endif %}
   <strong>for URL: https://{{ domain }}</strong>
   <div>
     <label for="login">Login ID/ Email</label>
