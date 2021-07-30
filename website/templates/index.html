@@ -11,7 +11,7 @@
   <h1 class="heading">Master Password</h1>
   <div>
     <label for="master_pw">
-    {% if view_flag=="create" %}
+    {% if not db_exist %}
       Create a Master Password to start:
     {% else %}
       Verification
@@ -25,12 +25,13 @@
       placeholder="Enter Master Password"
     />
   </div>
-  <button type="submit" class="btn-submit">
-    {% if view_flag=="create" %}
+  <button id="btn-master-pw" type="submit" class="btn-submit">
+    {% if not db_exist %}
       Create
     {% else %}
       Unlock
     {% endif %}
   </button>
+  <p id="btn-master-warn"></p>
 </form>
 {% endblock %}

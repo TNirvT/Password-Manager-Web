@@ -41,7 +41,7 @@ button:hover {
     background-color: #404040;
     overflow: hidden;
 }
-.nav-item{
+.nav-item, .nav-item-unlocked{
     float: left;
     padding: 8px 14px;
     color: #f2f2ee;

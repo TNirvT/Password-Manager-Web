@@ -8,7 +8,7 @@ import tldextract
 from .master_key import MasterKey
 from .pw_gen import pwgen
 from .models import PassRecord
-from . import db, secret_id
+from . import db, secret_id, db_path
 
 views = Blueprint("views", __name__)
 
@@ -38,10 +38,10 @@ def index():
     secret_entry = PassRecord.query.get(secret_id)
     if secret_entry and not master_key:
         # Database exists, not logged in yet
-        return render_template("index.html", view_flag="locked")
+        return render_template("index.html", db_exist=True)
     elif not master_key:
         # Database doesn't exist, not logged in yet
-        return render_template("index.html", view_flag="create")
+        return render_template("index.html", db_exist=False)
     else:
         # Logged in, redirect to content
         return redirect(url_for("views.content"))
@@ -106,24 +106,23 @@ def master_lock():
     remove_session()
     return resp
 
-# TODO: see if we can pass logged_in=True automatically
 @views.route("/settings")
 def settings():
     if not validate_session(): return redirect(url_for("views.index"))
-    return render_template("settings.html", logged_in=True)
+    return render_template("settings.html")
 
-@views.route("/content", methods=["GET"], defaults={'entry_id': None})
+@views.route("/content", methods=["GET"])
 @views.route("/content/<int:entry_id>", methods=["GET"])
-def content(entry_id):
+def content(entry_id=None):
     master_key = validate_session()
     if not master_key: return redirect(url_for("views.index"))
     
     if entry_id and entry_id != str(secret_id):
         result = PassRecord.query.get(int(entry_id))
         result.password = master_key.decrypt(result.password)
-        return render_template("content.html", result=result, logged_in=True)
+        return render_template("content.html", result=result)
 
-    return render_template("content.html", result=None, logged_in=True)
+    return render_template("content.html", result=None)
 
 @views.route("/search", methods=["POST"])
 def search_db():
@@ -152,7 +151,7 @@ def generate_new_pw():
     flash(f"Record (id={entryId_for_update}) updated successfully", category="good")
     result = PassRecord.query.get_or_404(entryId_for_update)
     result.password = new_pw
-    return render_template("content.html", result=result, logged_in=True)
+    return render_template("content.html", result=result)
 
 @views.route("/add/<string:url>", methods=["GET"])
 def new_entry(url):
@@ -164,7 +163,7 @@ def new_entry(url):
         flash(f"Invalid URL detected: {domain}", category="warn")
         return redirect(url_for("views.content"))
     
-    return render_template("update.html", view_flag="insert", domain=domain, logged_in=True)
+    return render_template("update.html", view_flag="insert", domain=domain)
 
 @views.route("/insert_db/<string:domain>", methods=["POST"])
 def insert_db(domain):
@@ -193,8 +192,7 @@ def update(id):
     return render_template("update.html",
         view_flag="update",
         entry_for_update=entry_for_update,
-        domain=entry_for_update.url,
-        logged_in=True)
+        domain=entry_for_update.url)
 
 @views.route("/update_db/<int:id>", methods=["POST"])
 def update_db(id):

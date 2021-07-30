@@ -131,3 +131,4 @@ dmypy.json
 *.key
 website/temp_pwmngr.db
 test.py
+.database/
