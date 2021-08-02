@@ -132,3 +132,7 @@ dmypy.json
 website/temp_pwmngr.db
 test.py
 .database/
+
+node_modules
+website/static/*bundle*.js
+

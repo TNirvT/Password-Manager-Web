@@ -1,3 +1,5 @@
+const axios = require('axios');
+
 // const navItemUnlocked = document.getElementsByClassName("nav-item-unlocked");
 // const navLength = navItemUnlocked.length
 // if (window.location.pathname !== "/"){
