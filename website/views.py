@@ -124,12 +124,6 @@ def content(entry_id=None):
 
     return render_template("content.html", result=None)
 
-@views.route("/content_react", methods=["GET"])
-def content_react():
-    master_key = validate_session()
-    if not master_key: return redirect(url_for("views.index"))
-    return render_template("content_react.html", result=None)
-
 @views.route("/search", methods=["POST"])
 def search_db():
     url_read = request.form.get("url_read")
@@ -223,3 +217,34 @@ def delete(id):
     db.session.commit()
     flash(f"Record (id={id}) deleted!!", category="warn")
     return redirect(url_for("views.content"))
+
+####
+
+@views.route("/content_react", methods=["GET"])
+def content_react():
+    master_key = validate_session()
+    if not master_key: return redirect(url_for("views.index"))
+    return render_template("content_react.html", result=None)
+
+
+@views.route("/search_react", methods=["GET"])
+def search_db_react():
+    master_key = validate_session()
+    if not master_key: return "Not logged in", 401
+
+    url_read = request.args.get('url_read')
+    domain = tldextract.extract(url_read).registered_domain
+    if domain == "" or "." not in domain:
+        return "Invalid URL", 400
+
+    result = PassRecord.query.filter_by(url=domain).first()
+    if not result:
+        return {}, 404
+    else:
+        return {
+            'id': result.id,
+            'url': result.url,
+            'login': result.login,
+            'remark': result.remark,
+            'password': master_key.decrypt(result.password),
+        }
