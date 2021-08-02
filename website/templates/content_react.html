@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}
+  - Vault
+{% endblock %}
+{% block body %}
+<form class="form-group" method="POST" action="/search">
+  <h1 class="heading">Password Vault React</h1>
+  <div>
+    <label for="url_read">Search</label>
+    <input
+      type="text"
+      class="form-control"
+      id="url_read"
+      name="url_read"
+      placeholder="Search URL"
+    />
+  </div>
+  <button type="submit" class="btn-submit">Submit</button>
+</form>
+<div id="react"></div>
+<script
+  type="text/javascript"
+  src="{{ url_for('static', filename='content.bundle.js') }}">
+</script>
+{% if result %}
+<div class="table-title">
+  <h2 class="heading">
+    Record for<br>
+    https://{{ result.url }}
+  </h2>
+  <button type="button" id="btn-copyPass" value={{ result.password }}>Copy Password</button>
+</div>
+<table>
+  <div class="table-group">
+    <colgroup>
+      <col style="width: 40%;">
+      <col style="width: 40%;">
+      <col style="width: 20%;">
+    </colgroup>
+    <tr>
+      <th>Login ID</th><th>Notes</th><th>Actions</th>
+    </tr>
+    <tr>
+      <td>{{ result.login }}</td>
+      <td>{{ result.remark }}</td>
+      <td>
+        <a href="/update/{{ result.id }}">Update</a><br>
+        <form id="form-del" method="POST" action="/delete/{{ result.id }}">
+          <a id="anchor-del" href="#">Delete</a>
+        </form>
+      </td>
+    </tr>
+  </div>
+</table>
+<!-- <div class="gen-group"> -->
+<form class="form-group" method="POST" action="/generate_new">
+  <button type="submit" id="generate_new" name="generate_new" value={{ result.id }}>Generate New Password</button><br>
+  <ul class="list-notes">
+    <li>Generate New Password will update the record automatically.</li>
+  </ul>
+<!-- </div> -->
+</form>
+{% endif %}
+{% endblock %}

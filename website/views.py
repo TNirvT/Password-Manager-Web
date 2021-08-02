@@ -44,7 +44,7 @@ def index():
         return render_template("index.html", db_exist=False)
     else:
         # Logged in, redirect to content
-        return redirect(url_for("views.content"))
+        return redirect(url_for("views.content_react"))
 
 @views.route("/login", methods=["POST"])
 def login():
@@ -56,7 +56,7 @@ def login():
         if master_key.unlock(pw, secret_entry.password):
             flash("Master password correct", category="good")
             add_session(master_key.key)
-            return redirect(url_for("views.content"))
+            return redirect(url_for("views.content_react"))
         else:
             flash("Incorrect password!", category="warn")
             return redirect(url_for("views.index"))
@@ -67,7 +67,7 @@ def login():
         db.session.commit()
         flash("Master password created", category="good")
         add_session(master_key.key)
-        return redirect(url_for("views.content"))
+        return redirect(url_for("views.content_react"))
 
 @views.route("/change_pw", methods=["POST"])
 def master_change():
@@ -123,6 +123,12 @@ def content(entry_id=None):
         return render_template("content.html", result=result)
 
     return render_template("content.html", result=None)
+
+@views.route("/content_react", methods=["GET"])
+def content_react():
+    master_key = validate_session()
+    if not master_key: return redirect(url_for("views.index"))
+    return render_template("content_react.html", result=None)
 
 @views.route("/search", methods=["POST"])
 def search_db():
