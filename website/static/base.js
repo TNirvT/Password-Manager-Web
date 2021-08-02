@@ -1,4 +1,10 @@
-const axios = require('axios');
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+ReactDOM.render(
+    <div>Testing1234</div>,
+    document.getElementById('react')
+);
 
 // const navItemUnlocked = document.getElementsByClassName("nav-item-unlocked");
 // const navLength = navItemUnlocked.length
