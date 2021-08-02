@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}
+  - Vault
+{% endblock %}
+{% block body %}
+<div id="react"></div>
+<script
+  type="text/javascript"
+  src="{{ url_for('static', filename='content.bundle.js') }}">
+</script>
+{% endblock %}

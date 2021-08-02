@@ -44,7 +44,7 @@ def index():
         return render_template("index.html", db_exist=False)
     else:
         # Logged in, redirect to content
-        return redirect(url_for("views.content"))
+        return redirect(url_for("views.content_react"))
 
 @views.route("/login", methods=["POST"])
 def login():
@@ -56,7 +56,7 @@ def login():
         if master_key.unlock(pw, secret_entry.password):
             flash("Master password correct", category="good")
             add_session(master_key.key)
-            return redirect(url_for("views.content"))
+            return redirect(url_for("views.content_react"))
         else:
             flash("Incorrect password!", category="warn")
             return redirect(url_for("views.index"))
@@ -67,7 +67,7 @@ def login():
         db.session.commit()
         flash("Master password created", category="good")
         add_session(master_key.key)
-        return redirect(url_for("views.content"))
+        return redirect(url_for("views.content_react"))
 
 @views.route("/change_pw", methods=["POST"])
 def master_change():
@@ -217,3 +217,34 @@ def delete(id):
     db.session.commit()
     flash(f"Record (id={id}) deleted!!", category="warn")
     return redirect(url_for("views.content"))
+
+####
+
+@views.route("/content_react", methods=["GET"])
+def content_react():
+    master_key = validate_session()
+    if not master_key: return redirect(url_for("views.index"))
+    return render_template("content_react.html", result=None)
+
+
+@views.route("/search_react", methods=["GET"])
+def search_db_react():
+    master_key = validate_session()
+    if not master_key: return "Not logged in", 401
+
+    url_read = request.args.get('url_read')
+    domain = tldextract.extract(url_read).registered_domain
+    if domain == "" or "." not in domain:
+        return "Invalid URL", 400
+
+    result = PassRecord.query.filter_by(url=domain).first()
+    if not result:
+        return {}, 404
+    else:
+        return {
+            'id': result.id,
+            'url': result.url,
+            'login': result.login,
+            'remark': result.remark,
+            'password': master_key.decrypt(result.password),
+        }
