@@ -19,17 +19,63 @@ function PasswordManagerApp(props) {
       setData(null);
       if (error.response.status === 404) {
         setMessage(searchURL + ' is not found');
-      } else {
+      } else if (error !== undefined) {
         setMessage(error.message);
       }
     });
   }
 
-  let editPane; 
+  function copyPass () {
+    navigator.clipboard.writeText(data.password);
+  }
+
+  function genNewPass () {
+    console.log("updating " + data.id);
+    axios.post("/generate_new_react", {
+      generate_new: data.id,
+    }).then(res => {
+      setData(res.data);
+      setMessage(`Record ${data.id.toString()} updated successfully!`);
+    }).catch(error => {
+      setData(null);
+      if (error.response.status === 403) {
+        setMessage(data.id.toString() + ' is invalid ID');
+      } else if (error !== undefined) {
+        setMessage(error.message);
+      }
+    });
+  }
+
+  function custPass () {
+    console.log("custPass")
+  }
+
+  let editPane;
   if (data) {
     editPane = <div>
-      Login: <input type="textbox" value={data.login} />
-      Remarks: <input type="textbox" value={data.remark} />
+      <h2>URL: https://{data.url}</h2>
+      <button onClick={copyPass} >Copy Password</button>
+      <span> </span>
+      <button onClick={genNewPass}>Generate Password</button>
+      <span> </span>
+      <button onClick={custPass}>Custom Password</button>
+      <table>
+      <tbody>
+        <tr>
+          <th>Login ID</th><th>Notes</th><th>Actions</th>
+        </tr>
+        <tr>
+          <td id="col-login">{data.login}</td>
+          <td id="col-remark">{data.remark}</td>
+          <td id="col-actions">
+            <button className="btn-sm">Update</button><br/>
+            <button className="btn-sm">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+      </table><br/>
+      {/* Login: <input type="textbox" value={data.login} />
+      Remarks: <input type="textbox" value={data.remark} /> */}
     </div>;
   }
 

@@ -21,23 +21,18 @@ def phrase_gen(min_len, max_len):
 # mixed input: directly return input as password
 def pwgen(in_put):
     in_put = str(in_put).replace(" ","")
-    if in_put != "" and not _allpunct(in_put):
-        return pwgen_direct_input(in_put)
     if in_put == "":
         return pwgen_general()
-    else:
+    elif _allpunct(in_put):
         return pwgen_custom_punct(in_put)
+    else:
+        return pwgen_direct_input(in_put)
 
 def _allpunct(in_put):
     for chara in in_put:
         if chara not in string.punctuation:
             return False
     return True
-
-def pwgen_direct_input(in_put):
-    if len(in_put) < pw_config["length_min"]:
-        raise ValueError(f"Direct input password must be {pw_config['length_min']} characters or longer.")
-    return in_put
 
 def _pwgen_base(pw_punct):
     pw_length = randint(pw_config["length_min"], pw_config["length_max"])
@@ -53,3 +48,8 @@ def pwgen_general():
 def pwgen_custom_punct(in_put):
     pw_punct = "".join(choice(in_put) for _ in range(randint(1,3)))
     return _pwgen_base(pw_punct)
+
+def pwgen_direct_input(in_put):
+    if len(in_put) < pw_config["length_min"]:
+        raise ValueError(f"Direct input password must be {pw_config['length_min']} characters or longer.")
+    return in_put

@@ -126,6 +126,9 @@ def content(entry_id=None):
 
 @views.route("/search", methods=["POST"])
 def search_db():
+    master_key = validate_session()
+    if not master_key: return redirect(url_for("views.index"))
+    
     url_read = request.form.get("url_read")
     domain = tldextract.extract(url_read).registered_domain
     if domain == "" or "." not in domain:
@@ -226,7 +229,6 @@ def content_react():
     if not master_key: return redirect(url_for("views.index"))
     return render_template("content_react.html", result=None)
 
-
 @views.route("/search_react", methods=["GET"])
 def search_db_react():
     master_key = validate_session()
@@ -242,6 +244,25 @@ def search_db_react():
         return {}, 404
     else:
         return {
+            'id': result.id,
+            'url': result.url,
+            'login': result.login,
+            'remark': result.remark,
+            'password': master_key.decrypt(result.password),
+        }
+
+@views.route("/generate_new_react", methods=["POST"])
+def generate_new_pw_react():
+    master_key = validate_session()
+    entryId_for_update = request.get_json()["generate_new"]
+    if entryId_for_update == secret_id:
+        return "Invalid ID", 403
+    entry_for_update = PassRecord.query.get(entryId_for_update)
+    new_pw = pwgen("")
+    entry_for_update.password = master_key.encrypt(new_pw)
+    db.session.commit()
+    result = PassRecord.query.get_or_404(entryId_for_update)
+    return {
             'id': result.id,
             'url': result.url,
             'login': result.login,
