@@ -31,10 +31,9 @@ button:hover {
 }
 
 .btn-sm {
-  width: 45px;
+  width: 43px;
   font-size: 0.6rem;
-  margin-top: 2px;
-  margin-bottom: 2px;
+  margin: 2px 1px;
   text-align: center;
 }
 
@@ -105,6 +104,12 @@ td, th{
     text-align: left;
     margin-left: auto;
     margin-right: auto;
+}
+.input-update{
+  width: 100%;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
 }
 
 #col-login{
