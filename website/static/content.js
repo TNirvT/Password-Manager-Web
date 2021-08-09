@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 
@@ -8,6 +8,7 @@ function PasswordManagerApp(props) {
   const [data, setData] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [updatingData, setUpdatingData] = useState({});
+  const [deleting, setDeleting] = useState(false);
 
   function search() {
     axios.get('/search_react', {
@@ -16,11 +17,40 @@ function PasswordManagerApp(props) {
       },
     }).then(res => {
       setData(res.data);
+      if (res.data.id === null) {
+        setUpdating(true);
+        setUpdatingData({...updatingData,
+          ["login"]: "",
+          ["remark"]: "",
+          ["password"]: "",
+        });
+        setMessage("New URL detected. Add a new entry?")
+      } else {
+        setUpdating(false);
+        setMessage("")
+      };
     }).catch(error => {
       setData(null);
-      if (error.response.status === 404) {
-        setMessage(searchURL + ' is not found');
-      } else if (error !== undefined) {
+      if (error !== undefined) {
+        setMessage(error.message);
+      }
+    });
+  }
+
+  function addNewEntry() {
+    console.log("add new entry");
+    axios.post("/insert_db_react",{
+      url: data.url,
+      login: updatingData.login,
+      remark: updatingData.remark,
+      password: updatingData.password,
+    }).then(res => {
+      setData(res.data);
+      setMessage("New entry created!");
+      setUpdating(false);
+    }).catch(error => {
+      setData(null);
+      if (error !== undefined) {
         setMessage(error.message);
       }
     });
@@ -52,7 +82,7 @@ function PasswordManagerApp(props) {
     setUpdatingData({...updatingData,
       ["login"]: data.login,
       ["remark"]: data.remark,
-      ["password"]: data.password,
+      ["password"]: "",
     });
   }
 
@@ -65,7 +95,7 @@ function PasswordManagerApp(props) {
     }).then(res => {
       setData(res.data);
       setMessage(`Record ${data.id.toString()} updated sucessfully!`);
-      setUpdatingData(false);
+      setUpdating(false);
     }).catch(error => {
       setData(null);
       if (error.response.status === 403) {
@@ -73,11 +103,28 @@ function PasswordManagerApp(props) {
       } else if (error !== undefined) {
         setMessage(error.message);
       }
-    });
+    })
   }
 
-  function delEntry () {
-    console.log("deleting");
+  function startDelete () {
+    setDeleting(true);
+  }
+
+  function confirmDelete () {
+    axios.post("/delete_react", {
+      id: data.id,
+    }).then(_ => {
+      setData(null);
+      setMessage(`Record ${data.id.toString()} deleted sucessfully!`);
+      setDeleting(false);
+    }).catch(error => {
+      setData(null);
+      if (error.response.status === 403) {
+        setMessage(data.id.toString() + ' is invalid ID');
+      } else if (error !== undefined) {
+        setMessage(error.message);
+      }
+    })
   }
 
   let editPane;
@@ -86,14 +133,15 @@ function PasswordManagerApp(props) {
       <h2>URL: https://{data.url}</h2>
       {updating?
         <input
+          className="input-pw-ch"
           type="password"
-          placeholder="Enter new password"
+          placeholder="Enter a new password"
           onChange={e => { setUpdatingData({...updatingData, ["password"]:e.target.value }) }}
         />
         : <div>
-          <button onClick={copyPass}>Copy Password</button>
+          <button onClick={copyPass} disabled={deleting? true : false}>Copy Password</button>
           <span> </span>
-          <button onClick={genNewPass}>Generate Password</button>
+          <button onClick={genNewPass} disabled={deleting? true : false}>Generate Password</button>
         </div>
       }
       <table>
@@ -109,8 +157,8 @@ function PasswordManagerApp(props) {
               <input
                 className="input-update"
                 type="text"
-                placeholder={data.login}
-                defaultValue={data.login}
+                placeholder={data.id? data.login : "Enter your login id"}
+                defaultValue={data.id && data.login}
                 onChange={e => { setUpdatingData({...updatingData, ["login"]:e.target.value }) }}
               /> : data.login
             }
@@ -120,8 +168,8 @@ function PasswordManagerApp(props) {
               <input
                 className="input-update"
                 type="text"
-                placeholder={data.remark}
-                defaultValue={data.remark}
+                placeholder={data.id? data.remark : "Additional note"}
+                defaultValue={data.id && data.remark}
                 onChange={e => { setUpdatingData({...updatingData, ["remark"]:e.target.value }) }}
               /> : data.remark
             }
@@ -129,31 +177,43 @@ function PasswordManagerApp(props) {
           <td>
             <button
               className="btn-sm"
-              onClick={updating? confirmUpdate : startUpdate}
+              onClick={data.id ? (!updating ? startUpdate : confirmUpdate) : addNewEntry}
+              disabled={deleting? true : false}
             >{updating? "Confirm" : "Update"}
             </button>
-            {updating?
+            {updating &&
               <button
                 className="btn-sm"
                 onClick={() => setUpdating(false)}
-              >Cancel</button> : null
+              >Cancel</button>
             }<br/>
             <button
-              className="btn-sm"
-              onClick={delEntry}
+              className="btn-sm btn-warn"
+              onClick={deleting? confirmDelete : startDelete}
               disabled={updating? true : false}
-            >Delete</button>
+            >{deleting? "Confirm" : "Delete"}
+            </button>
+            {deleting && 
+              <button
+                className="btn-sm"
+                onClick={() => setDeleting(false)}
+              >Cancel</button>
+            }
           </td>
         </tr>
       </tbody>
       </table>
-      {updatingData?
-        <ul>
-          <li>Note: Leave Password field blank if you don't want to update the password.</li>
+      {updating &&
+        <ul className="list-notes">
+          <li>Note: Leave Password field blank {data.id?
+            "if you don't want to update the password."
+          : "to generate a password by default parameters."
+          }</li>
           <li>Enter punctuations-only will generate a password with punctuations pick from them.</li>
           <li>Or you can enter a password directly.</li>
+          <li>Password should be at least 10 characters.</li>
         </ul>
-      : ""}
+      }
       <br/>
     </div>;
   }

@@ -235,7 +235,8 @@ def search_db_react(entry_id=None):
     master_key = validate_session()
     if not master_key: return "Not logged in", 401
 
-    if entry_id == secret_id: return "Forbidden ID", 403
+    if entry_id == secret_id:
+        return "Forbidden ID", 403
     elif entry_id == None:
         url_read = request.args.get('url_read')
         domain = tldextract.extract(url_read).registered_domain
@@ -244,8 +245,12 @@ def search_db_react(entry_id=None):
 
         result = PassRecord.query.filter_by(url=domain).first()
     else:
-        result = PassRecord.query.get_or_404(int(entry_id))
-    if not result: return {}, 404
+        result = PassRecord.query.get(int(entry_id))
+    if not result:
+        return {
+            "id": None,
+            "url": domain,
+        }
     return {
         'id': result.id,
         'url': result.url,
@@ -258,7 +263,7 @@ def search_db_react(entry_id=None):
 def generate_new_pw_react():
     master_key = validate_session()
     entryId_for_update = request.get_json()["generate_new"]
-    if entryId_for_update == secret_id: return "Invalid ID", 403
+    if entryId_for_update == secret_id: return "Forbidden ID", 403
     entry_for_update = PassRecord.query.get(entryId_for_update)
     new_pw = pwgen("")
     entry_for_update.password = master_key.encrypt(new_pw)
@@ -276,7 +281,7 @@ def generate_new_pw_react():
 def update_db_react():
     master_key = validate_session()
     id = request.get_json()["id"]
-    if id == secret_id: return "Invalid ID", 403
+    if id == secret_id: return "Forbidden ID", 403
     entry_for_update = PassRecord.query.get_or_404(id)
     entry_for_update.login = request.get_json()["login"]
     entry_for_update.remark = request.get_json()["remark"]
@@ -285,3 +290,38 @@ def update_db_react():
         entry_for_update.password = master_key.encrypt(pwgen(new_pw))
     db.session.commit()
     return redirect(url_for("views.search_db_react", entry_id=id))
+
+@views.route("/delete_react", methods=["POST"])
+def delete_react():
+    if not validate_session(): return redirect(url_for("views.index"))
+    id = request.get_json()["id"]
+    if id == secret_id: return "Forbidden ID", 403
+    entry_for_del = PassRecord.query.get_or_404(id)
+    db.session.delete(entry_for_del)
+    db.session.commit()
+    return redirect(url_for("views.content_react"))
+
+@views.route("/insert_db_react", methods=["POST"])
+def insert_db_react():
+    master_key = validate_session()
+
+    new_url = request.get_json()["url"]
+    new_login = request.get_json()["login"]
+    new_remark = request.get_json()["remark"]
+    new_pw = pwgen(request.get_json()["password"])
+    new_pw_enc = master_key.encrypt(new_pw)
+    if PassRecord.query.filter_by(url=new_url).first():
+        return "Error! Record already exists", 409
+    else:
+        new_passrecord = PassRecord(url=new_url,login=new_login,remark=new_remark,password=new_pw_enc)
+        db.session.add(new_passrecord)
+        db.session.commit()
+        return redirect(url_for("views.search_db_react", url_read=new_url))
+        # result = PassRecord.query.filter_by(url=domain).first()
+        # return {
+        #     'id': result.id,
+        #     'url': result.url,
+        #     'login': result.login,
+        #     'remark': result.remark,
+        #     'password': master_key.decrypt(result.password),
+        # }

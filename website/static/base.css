@@ -36,7 +36,10 @@ button:hover {
   margin: 2px 1px;
   text-align: center;
 }
-
+.btn-warn:not([disabled]) {
+  color: white;
+  background: red;
+}
 .close{
   width: 16px;
   padding: 0;
@@ -111,7 +114,12 @@ td, th{
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
 }
-
+.input-pw-ch{
+  width: 150px;
+  padding: 4px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
 #col-login{
   width: 40%;
 }
