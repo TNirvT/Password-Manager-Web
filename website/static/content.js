@@ -9,6 +9,7 @@ function PasswordManagerApp(props) {
   const [updating, setUpdating] = useState(false);
   const [updatingData, setUpdatingData] = useState({});
   const [deleting, setDeleting] = useState(false);
+  const minPwLength = 10;
 
   function search() {
     axios.get('/search_react', {
@@ -211,7 +212,7 @@ function PasswordManagerApp(props) {
           }</li>
           <li>Enter punctuations-only will generate a password with punctuations pick from them.</li>
           <li>Or you can enter a password directly.</li>
-          <li>Password should be at least 10 characters.</li>
+          <li>Password should be at least <span color="red">{minPwLength}</span> characters.</li>
         </ul>
       }
       <br/>

@@ -3,7 +3,7 @@ from random import choice, randint, sample
 
 # default values
 pw_config = {
-    "length_min": 10,
+    "length_min": 6,
     "length_max": 14,
     "caps_min": 1,
     "caps_max": 3,
