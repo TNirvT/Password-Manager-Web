@@ -9,7 +9,7 @@ function PasswordManagerApp(props) {
   const [updating, setUpdating] = useState(false);
   const [updatingData, setUpdatingData] = useState({});
   const [deleting, setDeleting] = useState(false);
-  const minPwLength = 10;
+  const minPwLength = 6;
 
   function search() {
     axios.get('/search_react', {

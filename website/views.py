@@ -93,7 +93,7 @@ def master_change():
 
     # remove(db_path+".old")
     flash("Master password changed successfully", category="good")
-    resp = make_response( redirect(url_for("views.content")) )
+    resp = make_response( redirect(url_for("views.content_react")) )
     add_session(master_key.key)
     return resp
 
@@ -317,11 +317,3 @@ def insert_db_react():
         db.session.add(new_passrecord)
         db.session.commit()
         return redirect(url_for("views.search_db_react", url_read=new_url))
-        # result = PassRecord.query.filter_by(url=domain).first()
-        # return {
-        #     'id': result.id,
-        #     'url': result.url,
-        #     'login': result.login,
-        #     'remark': result.remark,
-        #     'password': master_key.decrypt(result.password),
-        # }
