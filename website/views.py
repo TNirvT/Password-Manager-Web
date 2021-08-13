@@ -246,18 +246,37 @@ def search_db_react(entry_id=None):
         result = PassRecord.query.filter_by(url=domain).first()
     else:
         result = PassRecord.query.get(int(entry_id))
+    
     if not result:
         return {
             "id": None,
             "url": domain,
         }
-    return {
-        'id': result.id,
-        'url': result.url,
-        'login': result.login,
-        'remark': result.remark,
-        'password': master_key.decrypt(result.password),
-    }
+    else:
+        return {
+            'id': result.id,
+            'url': result.url,
+            'login': result.login,
+            'remark': result.remark,
+            'password': master_key.decrypt(result.password),
+        }
+
+@views.route("/insert_db_react", methods=["POST"])
+def insert_db_react():
+    master_key = validate_session()
+
+    new_url = request.get_json()["url"]
+    new_login = request.get_json()["login"]
+    new_remark = request.get_json()["remark"]
+    new_pw = pwgen(request.get_json()["password"])
+    new_pw_enc = master_key.encrypt(new_pw)
+    if PassRecord.query.filter_by(url=new_url).first():
+        return "Error! Record already exists", 409
+    else:
+        new_passrecord = PassRecord(url=new_url,login=new_login,remark=new_remark,password=new_pw_enc)
+        db.session.add(new_passrecord)
+        db.session.commit()
+        return redirect(url_for("views.search_db_react", url_read=new_url))
 
 @views.route("/generate_new_react", methods=["POST"])
 def generate_new_pw_react():
@@ -300,20 +319,3 @@ def delete_react():
     db.session.delete(entry_for_del)
     db.session.commit()
     return redirect(url_for("views.content_react"))
-
-@views.route("/insert_db_react", methods=["POST"])
-def insert_db_react():
-    master_key = validate_session()
-
-    new_url = request.get_json()["url"]
-    new_login = request.get_json()["login"]
-    new_remark = request.get_json()["remark"]
-    new_pw = pwgen(request.get_json()["password"])
-    new_pw_enc = master_key.encrypt(new_pw)
-    if PassRecord.query.filter_by(url=new_url).first():
-        return "Error! Record already exists", 409
-    else:
-        new_passrecord = PassRecord(url=new_url,login=new_login,remark=new_remark,password=new_pw_enc)
-        db.session.add(new_passrecord)
-        db.session.commit()
-        return redirect(url_for("views.search_db_react", url_read=new_url))
