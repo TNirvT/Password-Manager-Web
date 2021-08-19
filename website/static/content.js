@@ -20,10 +20,10 @@ function PasswordManagerApp(props) {
       setData(res.data);
       if (res.data.id === null) {
         setUpdating(true);
-        setUpdatingData({...updatingData,
-          ["login"]: "",
-          ["remark"]: "",
-          ["password"]: "",
+        setUpdatingData({
+          login: "",
+          remark: "",
+          password: "",
         });
         setMessage("New URL detected. Add a new entry?")
       } else {
@@ -80,10 +80,10 @@ function PasswordManagerApp(props) {
 
   function startUpdate () {
     setUpdating(true);
-    setUpdatingData({...updatingData,
-      ["login"]: data.login,
-      ["remark"]: data.remark,
-      ["password"]: "",
+    setUpdatingData({
+      login: data.login,
+      remark: data.remark,
+      password: "",
     });
   }
 
@@ -208,7 +208,7 @@ function PasswordManagerApp(props) {
         <ul className="list-notes">
           <li>Note: Leave Password field blank {data.id?
             "if you don't want to update the password."
-          : "to generate a password by default parameters."
+            : "to generate a password by default parameters."
           }</li>
           <li>Enter punctuations-only will generate a password with punctuations pick from them.</li>
           <li>Or you can enter a password directly.</li>
