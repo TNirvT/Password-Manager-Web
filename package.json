@@ -3,7 +3,15 @@
     "@babel/core": "^7.14.8",
     "@babel/preset-env": "^7.14.9",
     "@babel/preset-react": "^7.14.5",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^12.0.0",
+    "babel-jest": "^27.0.6",
     "babel-loader": "^8.2.2",
+    "core-js": "^3.16.2",
+    "jest": "^27.0.6",
+    "msw": "^0.28.2",
+    "react-test-renderer": "^17.0.2",
+    "regenerator-runtime": "^0.13.9",
     "webpack": "^5.47.1",
     "webpack-cli": "^4.7.2"
   },
@@ -14,6 +22,7 @@
   },
   "scripts": {
     "build": "webpack",
-    "watch": "webpack --mode development --watch"
+    "watch": "webpack --mode development --watch",
+    "test": "jest"
   }
 }
