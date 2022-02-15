@@ -26,3 +26,6 @@ jest (>=27.0.6)
 
 ## Compile (before launching server the first time)  
     npm run build
+
+## Blog post about this project
+[Password Manager Blog post](https://tnirvt.github.io/password-manager)
